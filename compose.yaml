@@ -1,0 +1,125 @@
+name: dofus-stuffer
+services:
+  traefik:
+    image: traefik:v3.6.2
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/routes.yaml
+      - --ping=true
+      - --log.level=INFO
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}:80"
+    volumes:
+      - ./infra/traefik/routes.yaml:/etc/traefik/routes.yaml:ro
+    depends_on:
+      web:
+        condition: service_started
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    image: dofus-stuffer-api:local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      REDIS_URL: redis://redis:6379
+      CATALOG_PATH: /app/data/catalog.json
+      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      ROLE: api
+    volumes:
+      - game-data:/var/lib/dofus-stuffer:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 5
+    restart: unless-stopped
+
+  worker:
+    image: dofus-stuffer-api:local
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      CATALOG_PATH: /app/data/catalog.json
+      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      ROLE: worker
+      WORKER_CONCURRENCY: 1
+      MAX_CANDIDATES: ${MAX_CANDIDATES:-10000000}
+    volumes:
+      - game-data:/var/lib/dofus-stuffer:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    cpus: 2
+    mem_limit: 768m
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+  maintenance:
+    image: dofus-stuffer-api:local
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    environment:
+      NODE_ENV: production
+      REDIS_URL: redis://redis:6379
+      CATALOG_PATH: /app/data/catalog.json
+      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      ROLE: maintenance
+      MAINTENANCE_CRON: ${MAINTENANCE_CRON:-0 3 * * 1}
+      MAINTENANCE_TIMEZONE: ${MAINTENANCE_TIMEZONE:-Europe/Paris}
+      CATALOG_FEED_URL: ${CATALOG_FEED_URL:-}
+      PRICE_FEED_URL: ${PRICE_FEED_URL:-}
+      PATCH_FEED_URL: ${PATCH_FEED_URL:-https://www.dofus.com/fr/rss/changelog.xml}
+    volumes:
+      - game-data:/var/lib/dofus-stuffer
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "--input-type=module", "-e", "import {Queue} from 'bullmq';import {Redis} from 'ioredis';const r=new Redis(process.env.REDIS_URL,{maxRetriesPerRequest:1});const q=new Queue('dofus-maintenance',{connection:r});try{if(!(await q.getWorkersCount())||!(await q.getJobScheduler('weekly-data-refresh')))process.exitCode=1}catch{process.exitCode=1}finally{await q.close();await r.quit()}"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    mem_limit: 2g
+    stop_grace_period: 120s
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  game-data:

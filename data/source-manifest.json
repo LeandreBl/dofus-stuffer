@@ -1,0 +1,140 @@
+{
+  "source": "Ankama installed client static data",
+  "version": "3.7.4.4",
+  "sourceVersion": "3.7.4.4",
+  "fetchedAt": "2026-10-07T17:59:28.983Z",
+  "unityVersion": "6000.3.16f1",
+  "sourceFiles": [
+    {
+      "resource": "breeds",
+      "file": "data_assets_breedsdataroot.asset.bundle",
+      "sha256": "9ba287b7be2cf49130fc09e2bff6c5351736be70aa5b628a98ef94591cd52994",
+      "count": 19
+    },
+    {
+      "resource": "characteristics",
+      "file": "data_assets_characteristicsdataroot.asset.bundle",
+      "sha256": "d757c409d9bb0befeed6a87e85a1a9700e3915209f9a9c02bdb85be61cd4dcbd",
+      "count": 123
+    },
+    {
+      "resource": "effects",
+      "file": "data_assets_effectsdataroot.asset.bundle",
+      "sha256": "5747a20ea1f6709d2e5b6cdb86a8404f87df8915337c8fc3ee8ecd00e55e22e0",
+      "count": 884
+    },
+    {
+      "resource": "item-types",
+      "file": "data_assets_itemtypesdataroot.asset.bundle",
+      "sha256": "aceb12603d9a51c71e884e64a4e646c23c0c53f6da370dc08cab7c354634ae1f",
+      "count": 236
+    },
+    {
+      "resource": "spell-variants",
+      "file": "data_assets_spellvariantsdataroot.asset.bundle",
+      "sha256": "623e0cbd8d6b08aa61ae34fc48e79940f13e50b2fecbf165e051bb23975bf19d",
+      "count": 431
+    },
+    {
+      "resource": "spell-types",
+      "file": "data_assets_spelltypesdataroot.asset.bundle",
+      "sha256": "3a8e5697cc80c1b3130455d26df7130dd97eab02e9fb551b3de5528ebacbf962",
+      "count": 3274
+    },
+    {
+      "resource": "spells",
+      "file": "data_assets_spellsdataroot.asset.bundle",
+      "sha256": "eb2179a5b3794e6af61e36a8b8e8f4be897a434054330192d947879a78ec81eb",
+      "count": 17006
+    },
+    {
+      "resource": "spell-levels",
+      "file": "data_assets_spelllevelsdataroot.asset.bundle",
+      "sha256": "ad1a40b08ca8347785390193c96463c1fce0bd02a1f50bb79c06556bd9ae0a16",
+      "count": 34319
+    },
+    {
+      "resource": "items",
+      "file": "data_assets_itemsdataroot.asset.bundle",
+      "sha256": "fa6ea248a3aaa9a9473b4290c3b07576255a376f236846c14bfe36f3487f9e40",
+      "count": 21554
+    },
+    {
+      "resource": "item-sets",
+      "file": "data_assets_itemsetsdataroot.asset.bundle",
+      "sha256": "971cc202b309cd4134beaeb96808c74a586c1fd232758b32372b68a9fdec301d",
+      "count": 940
+    },
+    {
+      "resource": "servers",
+      "file": "data_assets_serversdataroot.asset.bundle",
+      "sha256": "3e65225206cb05577e4fb7521763fc4323c56c1f207932f60d685b65e5866d10",
+      "count": 27
+    },
+    {
+      "resource": "spell-scripts",
+      "file": "data_assets_spellscriptsdataroot.asset.bundle",
+      "sha256": "8ce64f2b61a5f3ac3e7925752b6d7738def68a243368395a66cd3b4f47c78bce",
+      "count": 14934
+    },
+    {
+      "resource": "spell-states",
+      "file": "data_assets_spellstatesdataroot.asset.bundle",
+      "sha256": "d97b26cfeff105bd0b8b954f7ec5b7e4dfc5ed7ab220ff5da1b955fb2349f939",
+      "count": 6353
+    },
+    {
+      "resource": "monsters",
+      "file": "data_assets_monstersdataroot.asset.bundle",
+      "sha256": "b9baf64b7519cfe7cf3c671fc7bdb0fc0ed53bd57babf52cefd07bb57733c429",
+      "count": 5129
+    }
+  ],
+  "languageFiles": [
+    {
+      "language": "fr",
+      "sha256": "ce5b427437b2e12c145b5eb42851f0425cff9f101d4d4273bd6ec92fc49304b5"
+    },
+    {
+      "language": "en",
+      "sha256": "855c30445658275518d4ea336c77e4038d543a21677482e0007b28bc631addcf"
+    }
+  ],
+  "patch": {
+    "applied": false,
+    "reason": "Native client catalogue; no balance overlay.",
+    "sourceVersion": "3.7.4.4"
+  },
+  "catalogSha256": "f9edeeb0a7dbc3d2b267e14051437ecda585276c0bb51c1319a6ec195a2493a6",
+  "counts": {
+    "classes": 19,
+    "characteristics": 120,
+    "spells": 849,
+    "spellLevels": 1762,
+    "items": 3831,
+    "sets": 521,
+    "combatSpells": 1892,
+    "combatStates": 992,
+    "summons": 103,
+    "combatTargets": 103,
+    "assets": 4542
+  },
+  "endpointResources": [
+    "version",
+    "breeds",
+    "characteristics",
+    "effects",
+    "item-types",
+    "spell-variants",
+    "spell-types",
+    "spells",
+    "spell-levels",
+    "items",
+    "item-sets",
+    "servers",
+    "spell-scripts",
+    "spell-states",
+    "monsters"
+  ],
+  "licenseNote": "DOFUS et ses visuels appartiennent à Ankama. Les licences du code ne couvrent pas ces données et assets tiers."
+}

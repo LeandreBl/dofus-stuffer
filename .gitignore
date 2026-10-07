@@ -147,3 +147,11 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Données brutes régénérables et journaux locaux
+data/.cache/
+data/runtime/
+.local/
+graphify-out/
+**/dist/
+!.env.example

@@ -1,0 +1,17 @@
+.git
+node_modules
+**/node_modules
+**/dist
+data/.cache
+data/runtime
+data/effects-map.json
+data/punitive-fixture.json
+.local
+graphify-out
+legacy
+app
+tests
+docs
+launcher
+*.exe
+*.log

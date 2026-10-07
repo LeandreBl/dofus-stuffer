@@ -1,0 +1,14 @@
+{
+  "name": "Dofus Stuffer",
+  "short_name": "Stuffer",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#131817",
+  "background_color": "#131817",
+  "icons": [
+    { "src": "/brand/dofus-stuffer-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/brand/dofus-stuffer-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

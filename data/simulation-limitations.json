@@ -1,0 +1,149 @@
+{
+  "description": "Notes de mise à jour des sorts et limites des équipements. Les dégâts des sorts utilisent les effets natifs et la situation choisie ; les notes de mise à jour ne sont pas des avertissements de calcul.",
+  "source": "https://www.dofus.com/fr/mmorpg/actualites/maj/1772037-mise-jour-3-7/details",
+  "items": {
+    "1355": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "6508": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "6517": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "6519": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "6539": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "7110": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "7182": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "8118": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "11755": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "15014": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "15216": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "17525": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "20353": [
+      "3.7 : soins du passif prolongés à 2 tours ; non simulés."
+    ],
+    "20354": [
+      "3.7 : bonus critique de l’arme +6 ; vol de vie dans le meilleur élément et passif spécifique non simulés."
+    ],
+    "20355": [
+      "3.7 : attaque dans le meilleur élément ; non simulée."
+    ],
+    "20356": [
+      "3.7 : attaque dans le meilleur élément et retrait du cumul maximal du passif ; non simulés."
+    ],
+    "22368": [
+      "3.7 : dégâts 37–43 et vol 10–13 dans le meilleur élément, bonus critique +10 ; choix du meilleur élément et passif spécifique non simulés."
+    ],
+    "22412": [
+      "3.7 : poison ne touchant plus les alliés ; non simulé."
+    ],
+    "22444": [
+      "3.7 : bonus critique de l’arme +3 ; passif spécifique non simulé."
+    ],
+    "25222": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "26310": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "27534": [
+      "3.7 : soins désormais Neutre et conversions de forgemagie 100 % ou 10 % ; soins et conversions élémentaires de forgemagie non simulés."
+    ],
+    "32116": [
+      "3.7 : nouveau passif Dommages Poussée par PM utilisé et don de PM ; non simulé."
+    ],
+    "32118": [
+      "3.7 : passif de soin 6 %, une fois par type de déclenchement et par tour ; non simulé."
+    ],
+    "32119": [
+      "3.7 : passif de téléportation et de gain PA remanié ; non simulé."
+    ]
+  },
+  "spells": {
+    "12785": [
+      "3.7 : PV des invocations calculés sur les PV de base (Tonneau 60 %, Bambou 45 %)."
+    ],
+    "12824": [
+      "3.7 : PV des invocations calculés sur les PV de base (Tonneau 60 %, Bambou 45 %)."
+    ],
+    "13300": [
+      "3.7 : dégâts 3, critique 4, bonus par Téléfrag +3."
+    ],
+    "24038": [
+      "3.7 : PV des invocations calculés sur les PV de base (Tonneau 60 %, Bambou 45 %)."
+    ],
+    "32431": [
+      "3.7 : dégressivité de zone retirée."
+    ],
+    "32435": [
+      "3.7 : bonus de base +3/+4/+5 cumulable 2 fois."
+    ],
+    "32438": [
+      "3.7 : malus de soins reçus réduit à 1 tour."
+    ],
+    "32443": [
+      "3.7 : poussée directionnelle."
+    ],
+    "32449": [
+      "3.7 : poussée sur case centrale."
+    ],
+    "32453": [
+      "3.7 : zones par rang modifiées."
+    ],
+    "32454": [
+      "3.7 : bonus de base +3/+4/+5, rotation conditionnelle."
+    ],
+    "32455": [
+      "3.7 : recul 1/2/3 cases selon rang."
+    ],
+    "32457": [
+      "3.7 : zone demi-cercle 2 et bonus de base +10."
+    ],
+    "32459": [
+      "3.7 : poussée directionnelle et dégressivité de zone."
+    ],
+    "32460": [
+      "3.7 : seconde attaque 20–22, critique 24–26."
+    ],
+    "32466": [
+      "3.7 : malus de portée et réduction de portée minimale différés."
+    ],
+    "32467": [
+      "3.7 : PV 100 % des PV de base, dommages alliés x50 %."
+    ],
+    "32472": [
+      "3.7 : multiplicateur de dommages subis retiré et Pesanteur appliquée avant dégâts."
+    ],
+    "32473": [
+      "3.7 : multiplicateur dommages subis x110 % pendant 1 tour."
+    ],
+    "32475": [
+      "3.7 : détection des invisibles autour du lanceur et des Balises."
+    ],
+    "32531": [
+      "3.7 : retrait PA/PM supprimé et poussée/recul à 1 case."
+    ],
+    "32618": [
+      "3.7 : restriction ligne/diagonale retirée."
+    ]
+  }
+}

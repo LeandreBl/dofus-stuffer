@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Dofus Stuffer — Mes priorités</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main id="stuff-priorities-preview">
+    <section class="sp-app" aria-label="Liste des priorités du stuff">
+      <header class="sp-head">
+        <span class="sp-kicker">DOFUS STUFFER · PC · PVM</span>
+        <h1>Ce que je vise</h1>
+        <p class="sp-prototype">Prototype des priorités. Le simulateur et la recherche de stuffs restent à développer.</p>
+      </header>
+      <div class="sp-body">
+        <p class="sp-help">Clique sur un critère, choisis sa cible, puis classe-le. Dans un même niveau, chaque critère a le même poids.</p>
+        <div class="sp-picker" aria-label="Ajouter un critère"></div>
+        <form class="sp-editor" hidden aria-label="Régler le critère"></form>
+        <div class="sp-list" aria-label="Niveaux de priorité"></div>
+        <button class="sp-new" type="button" data-action="new">+ Ajouter un niveau</button>
+        <div class="sp-foot"><span class="sp-count"></span><span class="sp-storage">Enregistrement automatique dans ce navigateur</span></div>
+        <details class="sp-explanation">
+          <summary>Comment fonctionnent les priorités ?</summary>
+          <p>Plus un critère est haut, plus il pèse dans le futur classement. Le poids s’applique à chaque critère du niveau. L’ajout d’un niveau vide ne modifie pas les poids.</p>
+          <p>Un critère souple autorise un compromis. Coche « Obligatoire » pour rendre sa cible non négociable, notamment un budget maximal. Les valeurs de dégâts de cet exemple sont des cibles saisies, pas des dégâts calculés.</p>
+          <p>Pour les sorts, le type de coup et le jet visé se règlent en cliquant sur la ligne. La cible, les résistances, les buffs et la charge seront ajoutés avec le simulateur.</p>
+        </details>
+        <p class="sp-assets-note">Icônes de statistiques du jeu. Icône générique de dommages pour le sort et repère K provisoire pour les kamas.</p>
+        <div class="sp-live" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+    <noscript>Active JavaScript dans ton navigateur pour modifier les priorités.</noscript>
+  </main>
+</body>
+</html>

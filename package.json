@@ -1,0 +1,18 @@
+{
+  "name": "dofus-stuffer",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build -w @dofus/shared && npm run build -w @dofus/api && npm run build -w @dofus/web",
+    "test": "npm run build -w @dofus/shared && node --test tests/*.test.mjs && npm test -w @dofus/api --if-present",
+    "dev:web": "npm run dev -w @dofus/web",
+    "dev:api": "npm run dev -w @dofus/api",
+    "data:import": "node scripts/import-game-data.mjs",
+    "start": "docker compose up --build -d",
+    "stop": "docker compose down"
+  },
+  "devDependencies": { "typescript": "^5.9.3", "@types/node": "^24.0.0" },
+  "engines": { "node": ">=22.12.0" }
+}
