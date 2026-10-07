@@ -1,6 +1,6 @@
 # Plan produit et développement
 
-Dofus Stuffer cible Dofus PC, avec le PvM en premier. La base applicative est maintenant une application React et NestJS, dotée d'un catalogue réel, d'un calculateur partagé et d'une recherche asynchrone. L'ancienne maquette est archivée dans `legacy/prototype/`. Le déploiement cible Linux avec Docker Engine et Docker Compose ; `sh scripts/start.sh` lance la stack. `DofusStuffer.exe` reste une option Windows pour le développement local.
+Dofus Stuffer cible Dofus PC, avec le PvM en premier. La base applicative est maintenant une application React et NestJS, dotée d'un catalogue réel, d'un calculateur partagé et d'une recherche asynchrone. L'ancienne maquette est archivée dans `legacy/prototype/`. Le déploiement cible Linux avec Docker Engine et Docker Compose ; `sh scripts/start.sh` lance la stack.
 
 ## Parcours retenu
 
@@ -83,7 +83,7 @@ Une alimentation automatique dépendra d'une source vérifiée, datée et adapt�
 
 | Étape | Résultat attendu et validation |
 |---|---|
-| Socle applicatif | Compilation React/NestJS, lancement Compose, lanceur Windows et archive de la maquette |
+| Socle applicatif | Compilation React/NestJS, lancement Compose et archive de la maquette |
 | Catalogue et légalité | Références d'emplacements, doublons, prérequis, panoplies, exclusions et objets imposés |
 | Calcul direct | Tests normaux/critiques, jets, bonus, cibles et relances ; confrontation aux valeurs du client Dofus |
 | Recherche complète | HTTP → file → worker → Redis → WebSocket ; arrêt, reconnexion, fin et erreurs |

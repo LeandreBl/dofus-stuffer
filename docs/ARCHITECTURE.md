@@ -14,7 +14,7 @@
 | Nginx | Distribution du front compilé et des images locales |
 | Traefik | `/api` et `/socket.io` vers NestJS, le reste vers Nginx |
 
-Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. `sh scripts/start.sh` construit les services, attend leur démarrage et vérifie Redis ainsi qu’un worker. Le lanceur Windows est une commodité optionnelle pour le développement local.
+Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. `sh scripts/start.sh` construit les services, attend leur démarrage et vérifie Redis ainsi qu’un worker.
 
 Compose expose uniquement Traefik sur `${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}`. Pour un accès par l’IP du serveur Linux, définir `APP_BIND_ADDRESS=0.0.0.0` dans `.env`. Le fichier `.env` du poste de développement choisit le port 8180. Les autres services communiquent sur le réseau interne Docker. Traefik utilise une configuration fichier, sans accès au socket Docker. Le routage livré est HTTP ; la terminaison HTTPS pour un domaine doit être configurée lors du déploiement public.
 

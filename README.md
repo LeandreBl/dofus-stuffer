@@ -17,11 +17,11 @@ Application web pour préparer et rechercher des stuffs Dofus PC, avec priorité
 
 Le projet est un **monorepo TypeScript avec npm workspaces** : React 19 et Vite pour l'interface, NestJS 11 pour l'API, BullMQ et Redis pour les recherches, Socket.IO pour le suivi en direct. Les calculs sont partagés entre le navigateur et le worker. Le déploiement principal utilise Docker Compose sur Linux.
 
-**Repères :** [lancement Linux](#lancer-sur-linux) · [utilisation](#utilisation) · [périmètre et limites](#périmètre-et-limites) · [architecture et Graphify](#architecture-et-graphify) · [développement](#développement-et-vérifications) · [organisation](#organisation) · [documentation](#documentation) · [lanceur Windows](#option-windows-pour-le-développement-local).
+**Repères :** [lancement Linux](#lancer-sur-linux) · [utilisation](#utilisation) · [périmètre et limites](#périmètre-et-limites) · [architecture et Graphify](#architecture-et-graphify) · [développement](#développement-et-vérifications) · [organisation](#organisation) · [documentation](#documentation).
 
 ## Lancer sur Linux
 
-**Linux est la cible principale de déploiement.** Installer Docker Engine et le plugin Docker Compose, puis copier ou cloner le projet sur le serveur. Docker Desktop, Windows, .NET, Node.js et Python ne sont pas nécessaires sur cet hôte.
+**Linux est la cible principale de déploiement.** Installer Docker Engine et le plugin Docker Compose, puis copier ou cloner le projet sur le serveur. Docker Desktop, Windows, Node.js et Python ne sont pas nécessaires sur cet hôte.
 
 Depuis le dossier du projet :
 
@@ -228,8 +228,7 @@ L'import lit uniquement les fichiers statiques du jeu et conserve la provenance,
 | `packages/renderer/` | Moteur WebGL du personnage, avec provenance et références amont |
 | `data/` | Catalogue versionné, provenance, effets et cas de référence |
 | `infra/` et `compose.yaml` | Images Docker, Nginx et routage Traefik |
-| `scripts/` | Lancement et arrêt Linux, import du catalogue, construction du lanceur optionnel |
-| `launcher/` | Source du lanceur Windows optionnel |
+| `scripts/` | Lancement et arrêt Linux, import du catalogue |
 | `tests/` et `apps/api/test/` | Tests du moteur, de l'API et de l'intégration |
 | `docs/` | Plan produit, architecture, maintenance et rapports de vérification |
 | `graphify-out/` | Inventaire et extraction des relations du projet générés par Graphify |
@@ -258,15 +257,3 @@ curl http://localhost:8080/api/health
 ```
 
 Le point de santé doit indiquer `redis: true` et au moins un `worker`. Adapter le port à `.env`. Si Docker ne répond pas, vérifier que son service est démarré et que l'utilisateur dispose des droits pour l'utiliser. Les scripts s'exécutent avec `sh` même sans permission d'exécution sur les fichiers ; leurs fins de ligne sont fixées à LF par `.gitattributes`.
-
-## Option Windows pour le développement local
-
-Le lanceur **DofusStuffer.exe** est conservé comme option. Ouvrir Docker Desktop avec son moteur Linux, puis double-cliquer sur l'exécutable. Il lit `APP_PORT` dans `.env`, démarre Compose et ouvre le navigateur après vérification des services. Son journal est `.local/launcher.log`. Il nécessite .NET Framework 4.x et le dossier complet du projet ; il ne sert pas au déploiement Linux.
-
-Pour reconstruire le lanceur avec le compilateur .NET Framework présent sur Windows :
-
-```powershell
-powershell -File scripts/build-launcher.ps1
-```
-
-`DofusStuffer.exe --check` vérifie les fichiers indispensables et le port configuré sans démarrer Docker. Code de sortie : `0` si le contrôle réussit, `2` si la configuration est incomplète, `64` pour un argument inconnu. Ce contrôle ne teste pas les services ni le navigateur.

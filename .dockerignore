@@ -12,6 +12,4 @@ legacy
 app
 tests
 docs
-launcher
-*.exe
 *.log

@@ -19,7 +19,6 @@ Application disponible sur http://localhost:8180. Stack reconstruite après les 
 - Validation des requêtes, isolation des recherches par jeton, progression et résultat via Redis/WebSocket, récupération HTTP et reconnexion.
 - Critère de chance de critique propre au sort : taux du rang disponible + bonus critiques, bornes 0–100 %, indépendance des dommages critiques et des caractéristiques élémentaires, absence de critique si le taux de base est nul. Le calcul partagé reste utilisable pour les sorts de soutien ; le sélecteur Dégâts & critiques les exclut désormais.
 - Coexistence de seuils de dégâts et de probabilité pour un même sort, même priorité ou rang distinct ; validation API des bornes et rejet des options de dégâts incompatibles. Recherche parmi 200 équipements favorisant les dégâts : la probabilité est guidée par les bonus critiques. Intégration réelle du couple de critères via HTTP, Redis, WebSocket et récupération du résultat.
-- `DofusStuffer.exe --check` : code 0. Lecture de `.env` : port 8180. Ce contrôle n'est pas un test de clic sur la fenêtre du lanceur.
 
 ## Dégâts et objectifs de l'arme équipée
 
