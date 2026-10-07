@@ -154,4 +154,5 @@ data/runtime/
 .local/
 graphify-out/
 **/dist/
+.test-build/
 !.env.example

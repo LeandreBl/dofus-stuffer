@@ -364,6 +364,11 @@ function Workspace({ catalog }: { catalog: Catalog }) {
         }
       },
       setConnected,
+      () => {
+        // The job expired server-side; drop the stale receipt instead of polling it forever.
+        setReceipt(null);
+        setJob((previous) => (previous && !["completed", "cancelled", "failed"].includes(previous.status) ? null : previous));
+      },
     );
   }, [receipt, catalog.version, catalog.revision]);
 
@@ -449,7 +454,7 @@ function Workspace({ catalog }: { catalog: Catalog }) {
     setError("");
     setStarting(true);
     try {
-      const result = await api.optimize({ ...request, catalogRevision: catalog.revision, initialBuild: { ...build, exoBonuses: (build.exoBonuses || []).filter((exo) => request.filters.allowedExos?.includes(exo)).slice(0, request.filters.maxExos ?? 2) } });
+      const result = await api.optimize({ ...request, catalogRevision: catalog.revision, initialBuild: { ...build, baseStats: request.character.allocationMode === "automatic" ? build.baseStats : undefined, exoBonuses: (build.exoBonuses || []).filter((exo) => request.filters.allowedExos?.includes(exo)).slice(0, request.filters.maxExos ?? 2) } });
       setCatalogUpdated(false);
       setReceipt(result);
       setJob({

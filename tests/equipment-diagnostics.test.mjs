@@ -10,6 +10,25 @@ function inspect(data, input, build) {
   return inspectEquipment(data, input, evaluateBuild(data, input, build));
 }
 
+test('A lock overrides group exclusions only in its own slot and never overrides an item exclusion', () => {
+  const data = catalog([item(1, 'ring', { typeId: 9 })]);
+  const input = request();
+  input.filters.lockedSlots = { ring1: 1 };
+  input.filters.excludedTypeIds = [9];
+  input.filters.excludedCategories = ['Équipements'];
+  const kept = { slots: { ring1: 1 } };
+  assert.equal(evaluateBuild(data, input, kept).valid, true);
+  assert.equal(inspect(data, input, kept).items.ring1.invalid, false);
+  const duplicated = { slots: { ring1: 1, ring2: 1 } };
+  assert.equal(evaluateBuild(data, input, duplicated).valid, false);
+  const diagnostics = inspect(data, input, duplicated);
+  assert.equal(diagnostics.items.ring1.invalid, false);
+  assert.equal(diagnostics.items.ring2.invalid, true);
+  input.filters.excludedItemIds = [1];
+  assert.equal(evaluateBuild(data, input, kept).valid, false);
+  assert.equal(inspect(data, input, kept).items.ring1.invalid, true);
+});
+
 test('PA prerequisites use raw equipment totals and flag the restrictive item plus positive contributors', () => {
   const data = catalog([
     item(1, 'amulet', { stats: { actionPoints: 5 }, conditions: condition('actionPoints', '<', 13) }),

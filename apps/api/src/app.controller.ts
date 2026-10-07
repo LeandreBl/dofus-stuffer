@@ -4,7 +4,7 @@ import { JobsService } from './jobs.service.js';
 import { RedisService } from './redis.service.js';
 import { validateRequest } from './validation.js';
 import { getMaintenanceStatus, getServerPrices } from './maintenance.js';
-import { clientAddress, clientId, consumeRate } from './abuse-limits.js';
+import { clientAddress, clientId, consumeRate, refundRate } from './abuse-limits.js';
 import type { IncomingMessage } from 'node:http';
 import { bearerToken } from './security.js';
 
@@ -55,7 +55,12 @@ export class AppController {
     try { permitted = await consumeRate(this.redis.client, 'compute', identity, 1_800, 600_000, input.seconds); }
     catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
     if (!permitted) throw new HttpException('Budget de calcul atteint. Réessayez dans quelques minutes.', 429);
-    return this.jobs.create(input, catalog, identity);
+    try { return await this.jobs.create(input, catalog, identity); }
+    catch (error) {
+      // A refused admission (full queue, too many active jobs) must not burn compute budget.
+      await refundRate(this.redis.client, 'compute', identity, input.seconds).catch(() => {});
+      throw error;
+    }
   }
 
   @Get('jobs/:id')

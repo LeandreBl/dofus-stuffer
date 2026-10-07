@@ -73,6 +73,11 @@ export class JobsService implements OnModuleDestroy {
 
   async snapshot(id: string, token: unknown): Promise<JobSnapshot> {
     await this.authorize(id, token);
+    return this.read(id);
+  }
+
+  /** Reads a job the caller has already authorized. */
+  async read(id: string): Promise<JobSnapshot> {
     const snapshot = await readSnapshot(this.redis.client, id);
     if (!snapshot) throw new NotFoundException('Recherche introuvable ou accès expiré.');
     // A worker can disappear after writing a running snapshot. BullMQ owns truth for terminal failures.

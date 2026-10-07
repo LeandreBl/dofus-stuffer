@@ -195,7 +195,8 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
     used.add(id);
     if (item.slotType !== slotType(slot as Slot)) violations.push(`${item.name} ne correspond pas à cet emplacement.`);
     if (item.level > request.character.level) violations.push(`${item.name} demande le niveau ${item.level}.`);
-    if (request.filters.excludedItemIds.includes(id) || request.filters.excludedTypeIds.includes(item.typeId) || request.filters.excludedCategories.includes(item.category)) violations.push(`${item.name} fait partie des exclusions.`);
+    const locked = request.filters.lockedSlots[slot as Slot] === id;
+    if (request.filters.excludedItemIds.includes(id) || (!locked && (request.filters.excludedTypeIds.includes(item.typeId) || request.filters.excludedCategories.includes(item.category)))) violations.push(`${item.name} fait partie des exclusions.`);
     if (request.filters.allowedItemIds && !request.filters.allowedItemIds.includes(id)) violations.push(`${item.name} ne fait pas partie des objets autorisés.`);
     items.push(item); addStats(equipmentStats, item.stats);
     for (const effect of item.unsupportedEffects ?? []) warnings.add(`${item.name} : ${effect}`);

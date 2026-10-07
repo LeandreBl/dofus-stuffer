@@ -307,3 +307,13 @@ test('Automatic allocation discards an outdated seed after a level decrease, whi
   input.character.allocationMode = 'manual';
   assert.throws(() => validateRequest(input, catalog));
 });
+
+test('A locked item may belong to an excluded type or category, but not be excluded by id', () => {
+  const input = request();
+  input.filters.lockedSlots = { amulet: 1 };
+  input.filters.excludedTypeIds = [1];
+  input.filters.excludedCategories = ['Équipement'];
+  assert.doesNotThrow(() => validateRequest(input, catalog));
+  input.filters.excludedItemIds = [1];
+  assert.throws(() => validateRequest(input, catalog));
+});

@@ -6,11 +6,19 @@ import { lookup } from 'node:dns/promises';
 
 type ClientRequest = Pick<IncomingMessage, 'headers' | 'socket'>;
 let resolvedProxies: string[] = [];
+let currentTrust: ((address: string) => boolean) | undefined;
 
 export async function refreshProxyHosts(): Promise<void> {
   const hosts = (process.env.TRUSTED_PROXY_HOSTS || '').split(',').map(value => value.trim()).filter(Boolean);
+  // Keep the last known proxies on failure: forgetting them would merge every visitor into the proxy's budget.
   try { resolvedProxies = (await Promise.all(hosts.map(host => lookup(host, { all: true })))).flat().map(entry => entry.address); }
-  catch { resolvedProxies = []; throw new Error('Proxy de confiance introuvable sur le réseau Docker.'); }
+  catch { throw new Error('Proxy de confiance introuvable sur le réseau Docker.'); }
+  currentTrust = undefined;
+}
+
+/** Matcher built once per proxy refresh instead of once per request. */
+export function trustedProxy(address: string): boolean {
+  return (currentTrust ??= proxyTrust())(address);
 }
 
 export function normalizeAddress(value: string): string {
@@ -32,7 +40,7 @@ export function proxyTrust(addresses = [process.env.TRUSTED_PROXY_ADDRESSES || '
   };
 }
 
-export function clientAddress(request: ClientRequest, trusted = proxyTrust()): string {
+export function clientAddress(request: ClientRequest, trusted = trustedProxy): string {
   const peer = normalizeAddress(request.socket.remoteAddress || '');
   if (!trusted(peer)) return peer;
   const forwarded = request.headers['x-forwarded-for'];
@@ -67,8 +75,17 @@ if current == 0 then redis.call('PEXPIRE', KEYS[1], ARGV[3]) end
 return {1, redis.call('PTTL', KEYS[1])}
 `;
 
+const rateKey = (scope: string, identity: string) => `dofus:security:rate:${scope}:${identity}`;
+
 export async function consumeRate(redis: Pick<Redis, 'eval'>, scope: string, identity: string,
   limit: number, windowMs = 60_000, cost = 1): Promise<boolean> {
-  const result = await redis.eval(RATE_SCRIPT, 1, `dofus:security:rate:${scope}:${identity}`, cost, limit, windowMs) as [number, number];
+  const result = await redis.eval(RATE_SCRIPT, 1, rateKey(scope, identity), cost, limit, windowMs) as [number, number];
   return result[0] === 1;
+}
+
+/** Gives back budget consumed by a request that was refused afterwards. */
+export async function refundRate(redis: Pick<Redis, 'eval'>, scope: string, identity: string, cost: number): Promise<void> {
+  // Only an existing window is refunded, so an expired key never comes back without a TTL.
+  await redis.eval("if redis.call('EXISTS', KEYS[1]) == 1 then redis.call('DECRBY', KEYS[1], ARGV[1]) end return 1",
+    1, rateKey(scope, identity), cost);
 }

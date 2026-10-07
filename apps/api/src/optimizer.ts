@@ -152,8 +152,11 @@ export async function optimize(catalog: Catalog, request: OptimizationRequest, h
     .filter(combination => combination.length <= (request.filters.maxExos ?? 2))
     .filter(combination => !needsKnownPrices || combination.every(bonus => (request.prices.exoCosts?.[bonus] ?? request.prices.automaticExoCosts?.[bonus]) !== undefined
       || (request.prices.mode === 'remaining' && request.prices.ownedExos?.includes(bonus))));
+  // A locked item overrides type and category exclusions for its own slot only.
+  const lockedIds = new Set(Object.values(request.filters.lockedSlots));
+  const groupExcluded = (item: EquipmentItem) => excludedTypes.has(item.typeId) || excludedCategories.has(item.category);
   const allowed = catalog.items.filter(item => item.level <= request.character.level
-    && !excludedIds.has(item.id) && !excludedTypes.has(item.typeId) && !excludedCategories.has(item.category)
+    && !excludedIds.has(item.id) && (lockedIds.has(item.id) || !groupExcluded(item))
     && (!allow || allow.has(item.id)));
   const eligible = allowed.filter(item => !needsKnownPrices || itemPrice(item, request) !== undefined);
   const byId = new Map(eligible.map(item => [item.id, item]));
@@ -269,7 +272,7 @@ export async function optimize(catalog: Catalog, request: OptimizationRequest, h
       }
       pools.set(slot, [item]);
     } else {
-      pools.set(slot, eligible.filter(item => item.slotType === slotType(slot))
+      pools.set(slot, eligible.filter(item => item.slotType === slotType(slot) && !groupExcluded(item))
         .sort((a, b) => (ranking.get(b.id) || 0) - (ranking.get(a.id) || 0)));
       if (needsKnownPrices && slotType(slot) !== 'dofus' && !pools.get(slot)?.length
         && allowed.some(item => item.slotType === slotType(slot))) {

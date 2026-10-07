@@ -1,5 +1,5 @@
 import { BadRequestException, Logger } from '@nestjs/common';
-import { Worker } from 'bullmq';
+import { WaitingError, Worker } from 'bullmq';
 import { Redis } from 'ioredis';
 import { loadCatalog } from './catalog.service.js';
 import { cancellationKey, QUEUE_NAME, redisUrl } from './config.js';
@@ -14,7 +14,7 @@ export async function startWorker() {
   const publisher = new Redis(redisUrl(), { maxRetriesPerRequest: 2 });
   for (const redis of [connection, publisher]) redis.on('error', () => logger.warn('Connexion Redis indisponible.'));
   let shuttingDown = false;
-  const worker = new Worker<OptimizationJobData>(QUEUE_NAME, async job => {
+  const worker = new Worker<OptimizationJobData>(QUEUE_NAME, async (job, token) => {
     // Capture one immutable snapshot for the whole run; the next job can load a newer revision.
     const catalog = loadCatalog();
     const id = String(job.id);
@@ -36,6 +36,7 @@ export async function startWorker() {
       return { status: 'cancelled' };
     }
     await writeSnapshot(publisher, snapshot);
+    let interrupted = false;
     try {
       // Redis may retain jobs created before an API-contract update.
       const request = validateRequest(job.data.request, catalog);
@@ -44,9 +45,18 @@ export async function startWorker() {
           snapshot = { ...snapshot, ...update, updatedAt: new Date().toISOString(),
             message: update.results.length ? 'Amélioration des meilleurs stuffs trouvés.' : 'Recherche de combinaisons respectant les contraintes.' };
           await writeSnapshot(publisher, snapshot);
-          return shuttingDown || Boolean(await publisher.exists(cancellationKey(id)));
+          const cancelled = Boolean(await publisher.exists(cancellationKey(id)));
+          if (shuttingDown && !cancelled) interrupted = true;
+          return shuttingDown || cancelled;
         },
       });
+      if (interrupted) {
+        // A deploy is not a user cancellation: hand the job back so another worker restarts it.
+        await writeSnapshot(publisher, { ...snapshot, status: 'queued', updatedAt: new Date().toISOString(),
+          message: 'Moteur redémarré : la recherche va reprendre automatiquement.' });
+        await job.moveToWait(token);
+        throw new WaitingError();
+      }
       const completionReason = result.stopReason === 'candidates' ? ' Plafond de candidats atteint.'
         : result.stopReason === 'time' ? ' Durée choisie écoulée.' : '';
       snapshot = { ...snapshot, progress: result.progress, results: result.results,
@@ -57,6 +67,7 @@ export async function startWorker() {
       await writeSnapshot(publisher, snapshot);
       return { status: snapshot.status, evaluated: result.progress.evaluated };
     } catch (error) {
+      if (error instanceof WaitingError) throw error;
       const safeError = error instanceof SearchConfigurationError ? error.message
         : error instanceof BadRequestException ? 'Les paramètres de cette recherche ne sont plus compatibles. Actualisez la page et relancez-la.'
         : 'Le moteur a rencontré une erreur. Vérifiez le catalogue et relancez la recherche.';

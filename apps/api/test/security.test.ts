@@ -122,9 +122,10 @@ test('A rejected Redis subscription is caught without logging authentication cre
 });
 
 test('Concurrent subscriptions cannot exceed five authorized rooms and failures free their reservations', async () => {
+  const failedId = randomUUID();
   const jobs = {
     authorize: async () => { await new Promise(resolve => setTimeout(resolve, 5)); },
-    snapshot: async (id: string, token: string) => { if (token === 'fail-after-join') throw new Error(); return { id }; },
+    read: async (id: string) => { if (id === failedId) throw new Error(); return { id }; },
   };
   const gateway = new JobsGateway({ client: { eval: async () => [1, 60000] } } as any, jobs as any);
   const socket = {
@@ -132,7 +133,7 @@ test('Concurrent subscriptions cannot exceed five authorized rooms and failures 
     rooms: new Set(['client']), join: async (room: string) => { socket.rooms.add(room); },
     leave: async (room: string) => { socket.rooms.delete(room); }, emit: () => {},
   } as any;
-  const failed = await gateway.subscribe(socket, { jobId: randomUUID(), token: 'fail-after-join' });
+  const failed = await gateway.subscribe(socket, { jobId: failedId, token: 'authorized' });
   assert.equal(failed.ok, false);
   assert.equal(socket.rooms.size, 1);
   const results = await Promise.all(Array.from({ length: 7 }, () => gateway.subscribe(socket, { jobId: randomUUID(), token: 'authorized' })));

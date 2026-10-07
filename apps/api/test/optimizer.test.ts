@@ -664,3 +664,12 @@ test('Automatic allocation may leave its entire budget unused when strict upper 
   assert.equal(result.results[0].characterPoints.spent, 0);
   assert.equal(result.results[0].characterPoints.remaining, 995);
 });
+
+test('A locked item overrides its type exclusion without reopening the rest of that type', async () => {
+  const input = request();
+  input.filters.excludedTypeIds = [16, 1];
+  input.filters.lockedSlots = { hat: 2 };
+  const result = await optimize(fixture(), input, { onProgress: async () => true });
+  assert.equal(result.results[0].build.slots.hat, 2);
+  assert.equal(result.results[0].build.slots.amulet, undefined);
+});

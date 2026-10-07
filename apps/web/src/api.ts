@@ -48,11 +48,11 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
   const payload = await response.json().catch(() => null);
   if (!response.ok)
-    throw new Error(
+    throw Object.assign(new Error(
       Array.isArray(payload?.message)
         ? payload.message.join(" · ")
         : payload?.message || `Le serveur a répondu ${response.status}.`,
-    );
+    ), { status: response.status });
   return payload as T;
 }
 
@@ -81,6 +81,7 @@ export function followJob(
   receipt: JobReceipt,
   onUpdate: (snapshot: JobSnapshot) => void,
   onConnection: (connected: boolean) => void,
+  onGone: () => void,
 ): () => void {
   const socket: Socket = io({
     path: "/socket.io",
@@ -89,7 +90,14 @@ export function followJob(
   });
   let closed = false;
   let terminal = false;
+  let subscribed = false;
   let latestUpdate = "";
+  let polling: number | undefined;
+  const stop = () => {
+    closed = true;
+    window.clearInterval(polling);
+    socket.disconnect();
+  };
   const accept = (snapshot: JobSnapshot) => {
     if (closed || snapshot.id !== receipt.id) return;
     const nextTerminal = ["completed", "cancelled", "failed"].includes(
@@ -100,6 +108,7 @@ export function followJob(
     latestUpdate = snapshot.updatedAt;
     terminal = nextTerminal;
     onUpdate(snapshot);
+    if (terminal) stop();
   };
   socket.on("connect", () => {
     onConnection(true);
@@ -107,26 +116,26 @@ export function followJob(
       "subscribe",
       { jobId: receipt.id, token: receipt.token },
       (acknowledgement: { ok?: boolean }) => {
-        if (acknowledgement?.ok === false) onConnection(false);
+        subscribed = acknowledgement?.ok === true;
+        if (!subscribed) onConnection(false);
       },
     );
   });
-  socket.on("disconnect", () => onConnection(false));
+  socket.on("disconnect", () => { subscribed = false; onConnection(false); });
   socket.on("connect_error", () => onConnection(false));
   socket.on("job:update", accept);
-  // A snapshot also covers updates published before the subscription and WS reconnects.
+  // HTTP polling is only a fallback while the live subscription is down.
   const refresh = () => {
-    if (!terminal)
-      api
-        .job(receipt)
-        .then(accept)
-        .catch(() => onConnection(false));
+    if (closed || subscribed) return;
+    api
+      .job(receipt)
+      .then(accept)
+      .catch((error: { status?: number }) => {
+        if (error?.status === 404) { stop(); onGone(); }
+        else onConnection(false);
+      });
   };
   refresh();
-  const polling = window.setInterval(refresh, 3000);
-  return () => {
-    closed = true;
-    window.clearInterval(polling);
-    socket.disconnect();
-  };
+  polling = window.setInterval(refresh, 3000);
+  return stop;
 }

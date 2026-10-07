@@ -11,7 +11,7 @@ import { validJobId } from './security.js';
 import type { JobSnapshot } from './state.js';
 import type { IncomingMessage } from 'node:http';
 import { clientAddress, clientId, consumeRate } from './abuse-limits.js';
-import { admitSocket, allowedOrigin, releaseSocket, renewSocket, type SocketLease } from './socket-security.js';
+import { admitSocket, releaseSocket, renewSocket, type SocketLease } from './socket-security.js';
 
 @WebSocketGateway({
   path: '/socket.io',
@@ -19,7 +19,7 @@ import { admitSocket, allowedOrigin, releaseSocket, renewSocket, type SocketLeas
   transports: ['websocket', 'polling'],
   serveClient: false,
   connectTimeout: 10_000,
-  allowRequest: (request: IncomingMessage, callback: (error: string | null, accepted: boolean) => void) => callback(null, allowedOrigin(request)),
+  // allowRequest is installed in afterInit: admitSocket checks the origin and the socket budgets.
 })
 export class JobsGateway implements OnGatewayInit, OnModuleDestroy {
   @WebSocketServer() server!: Server;
@@ -109,7 +109,7 @@ export class JobsGateway implements OnGatewayInit, OnModuleDestroy {
       await client.join(room);
       joinedRoom = room;
       // Join before reading so updates occurring during reconnection are not lost.
-      const snapshot = await this.jobs.snapshot(jobId, token);
+      const snapshot = await this.jobs.read(jobId);
       client.emit('job:update', snapshot);
       return { ok: true, snapshot };
     } catch {

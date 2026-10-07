@@ -187,7 +187,8 @@ function equipmentState(catalog: Catalog, request: OptimizationRequest, evaluati
     equipped.push({ slot, item });
     if (item.slotType !== slotType(slot)) addIssue('wrong-slot', `${item.name} ne correspond pas à cet emplacement.`, [slot]);
     if (item.level > request.character.level) addIssue('level', `${item.name} demande le niveau ${item.level} (niveau actuel : ${request.character.level}).`, [slot]);
-    if (request.filters.excludedItemIds.includes(id) || request.filters.excludedTypeIds.includes(item.typeId) || request.filters.excludedCategories.includes(item.category)) addIssue('excluded', `${item.name} fait partie des exclusions de cette recherche.`, [slot]);
+    const locked = request.filters.lockedSlots[slot] === id;
+    if (request.filters.excludedItemIds.includes(id) || (!locked && (request.filters.excludedTypeIds.includes(item.typeId) || request.filters.excludedCategories.includes(item.category)))) addIssue('excluded', `${item.name} fait partie des exclusions de cette recherche.`, [slot]);
     if (request.filters.allowedItemIds && !request.filters.allowedItemIds.includes(id)) addIssue('not-allowed', `${item.name} ne fait pas partie des objets autorisés dans cette recherche.`, [slot]);
     if (item.dataWarnings?.length) addIssue('item-data', `${item.name} : ${item.dataWarnings.join(' ')}`, [slot], 'unknown');
   }

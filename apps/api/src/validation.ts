@@ -135,8 +135,8 @@ export function validateRequest(body: unknown, catalog: Catalog): OptimizationRe
     if (!item) continue;
     if (item.slotType !== slotType(slot as Slot)) errors.push('Un objet verrouillé ne correspond pas à son emplacement.');
     if (item.level > request.character.level) errors.push('Un objet verrouillé dépasse le niveau du personnage.');
-    if (request.filters.excludedItemIds.includes(item.id) || request.filters.excludedTypeIds.includes(item.typeId)
-      || request.filters.excludedCategories.includes(item.category)
+    // Type and category exclusions only apply to the free slots; a lock overrides them for this item.
+    if (request.filters.excludedItemIds.includes(item.id)
       || (request.filters.allowedItemIds && !request.filters.allowedItemIds.includes(item.id))) errors.push('Un objet verrouillé est également exclu.');
   }
   if (request.initialBuild?.exoBonuses?.some(bonus => !request.filters.allowedExos?.includes(bonus))) errors.push('Un bonus exo du stuff initial n’est pas autorisé.');
