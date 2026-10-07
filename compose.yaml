@@ -156,14 +156,16 @@ services:
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --no-auth-warning ping"]
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --no-auth-warning ping | grep -qx PONG"]
       interval: ${REDIS_HEALTH_INTERVAL:?}
       timeout: ${REDIS_HEALTH_TIMEOUT:?}
       retries: ${REDIS_HEALTH_RETRIES:?}
     restart: ${RESTART_POLICY:?}
     mem_limit: ${REDIS_MEMORY_LIMIT:?}
     cpus: ${REDIS_CPUS:?}
-    networks: [database]
+    networks:
+      database:
+        aliases: ["${COMPOSE_PROJECT_NAME:?}-redis"]
 volumes:
   redis-data:
   game-data:

@@ -76,7 +76,7 @@ Sous PowerShell, transmettre le fichier avec `Get-Content -Raw apps/api/test/red
 | Variable | Valeur usuelle |
 | --- | --- |
 | `ROLE` | `api` ou `worker` |
-| `REDIS_URL` | `redis://redis:6379` |
+| `REDIS_URL` | `redis://dofus-stuffer-redis:6379` (alias interne dérivé de `COMPOSE_PROJECT_NAME`) |
 | `REDIS_PASSWORD` | Mot de passe privé défini dans `.env` |
 | `TRUSTED_PROXY_ADDRESSES` | Adresse exacte du Traefik local |
 | `TRUSTED_PROXY_HOSTS` | Nom Docker du Traefik existant sur VPS |

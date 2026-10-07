@@ -30,6 +30,16 @@ Contrôles finaux : compilation complète et construction des images réussies ;
 
 Les preuves des corrections figurent dans `.local/security-audit/` : `corrections-build.log`, `corrections-docker-build.log`, `env-compose-start.log`, `env-compose-ready.log`, `env-tests.log`, `env-live.log`, `env-runtime.json` et `env-redis-regressions.json`. Le [contrôle Redis reproductible](../apps/api/test/redis.security.mjs) est conservé dans le dépôt ; son lancement est documenté dans le guide API. L'observation du navigateur confirme le chargement de l'atelier et le rendu du personnage sans erreur CSP. Les en-têtes et origines ont été contrôlés à nouveau après le passage à `.env`.
 
+### Incident d'authentification Redis au déploiement
+
+Après le déploiement, seule l'API signalait `WRONGPASS`. Le contrôle DNS transmis depuis le VPS montrait que `redis` résolvait encore vers `172.18.0.4` alors qu'aucun conteneur Redis du projet n'existait. L'API, reliée au réseau interne et au réseau Traefik partagé, pouvait donc joindre le Redis d'une autre application. Les alias Docker sont propres à chaque réseau, mais un nom peut désigner plusieurs conteneurs ; la résolution n'est alors pas garantie. [Documentation Docker](https://docs.docker.com/reference/compose-file/services/#aliases).
+
+Le service Redis possède maintenant l'alias interne `${COMPOSE_PROJECT_NAME}-redis`, et `.env.example` utilise `REDIS_URL=redis://${COMPOSE_PROJECT_NAME}-redis:6379`. Une installation existante doit aussi modifier sa ligne `REDIS_URL` dans `.env`, puis recréer les conteneurs avec la commande habituelle. Il n'est pas nécessaire d'effacer les volumes.
+
+Le contrôle de santé Redis exige explicitement la réponse `PONG` : `redis-cli` peut retourner un code de sortie nul malgré un refus d'authentification. Le gateway attend désormais l'événement Redis `ready`, rétablit son abonnement à chaque reconnexion et traite les rejets sans afficher l'objet d'erreur, qui peut contenir le mot de passe.
+
+Vérifications : compilation API et image réussies ; **78 tests API réussis**, dont trois nouveaux contrôles de reconnexion et de masquage des identifiants. Une stack temporaire avec deux Redis reproduit le refus avec le nom générique lorsque le Redis du projet est arrêté ; la connexion avec l'alias propre au projet et un mot de passe contenant des caractères spéciaux réussit. Avec un mauvais mot de passe, le nouveau contrôle Redis échoue, l'API reste active sans redémarrage, répond 503 et ses journaux ne contiennent ni identifiant ni erreur d'authentification brute. La stack locale rétablie utilise l'alias propre au projet, avec ses volumes conservés.
+
 ## Lancement sur le VPS
 
 Après clonage du dépôt :

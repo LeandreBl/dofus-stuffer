@@ -6,6 +6,7 @@ import { JobsGateway } from '../src/jobs.gateway.js';
 import { allowedOrigin } from '../src/socket-security.js';
 import { fetchLimited } from '../src/maintenance.js';
 import { randomUUID } from 'node:crypto';
+import { EventEmitter } from 'node:events';
 import { redisUrl } from '../src/config.js';
 
 test('Redis passwords from the environment preserve URL punctuation without entering Redis keys', () => {
@@ -70,6 +71,54 @@ test('Foreign and opaque browser origins are denied while native clients remain 
     assert.equal(allowedOrigin({ headers: { origin: 'null' } }), false);
     assert.equal(allowedOrigin({ headers: { origin: 'https://dofus-stuffer.notdotio.com.evil.invalid' } }), false);
   } finally { if (previous === undefined) delete process.env.ALLOWED_ORIGINS; else process.env.ALLOWED_ORIGINS = previous; }
+});
+
+const subscriptionGateway = (status: string, subscribe: () => Promise<unknown>) => {
+  const subscriber = Object.assign(new EventEmitter(), { status, subscribe });
+  const engine = Object.assign(new EventEmitter(), { opts: {} });
+  const gateway = new JobsGateway({ subscriber } as any, {} as any);
+  gateway.server = { engine } as any;
+  return { gateway, subscriber };
+};
+
+test('Progress subscriptions wait for Redis readiness and retry after reconnection', async () => {
+  let calls = 0;
+  const { gateway, subscriber } = subscriptionGateway('connecting', async () => { calls += 1; });
+  gateway.afterInit();
+  assert.equal(calls, 0);
+  subscriber.emit('ready');
+  assert.equal(calls, 1);
+  subscriber.emit('ready');
+  assert.equal(calls, 2);
+  await gateway.onModuleDestroy();
+  assert.equal(subscriber.listenerCount('ready'), 0);
+  assert.equal(subscriber.listenerCount('message'), 0);
+});
+
+test('Progress subscriptions start immediately when Redis is already ready', () => {
+  let calls = 0;
+  const { gateway } = subscriptionGateway('ready', async () => { calls += 1; });
+  gateway.afterInit();
+  assert.equal(calls, 1);
+});
+
+test('A rejected Redis subscription is caught without logging authentication credentials', async () => {
+  const secret = 'synthetic-sensitive-password';
+  let calls = 0;
+  const { gateway, subscriber } = subscriptionGateway('ready', async () => {
+    calls += 1;
+    if (calls === 1) throw Object.assign(new Error('WRONGPASS'), { command: { name: 'auth', args: [secret] } });
+  });
+  const warnings: string[] = [];
+  (gateway as any).logger.warn = (message: string) => { warnings.push(message); };
+  gateway.afterInit();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(warnings.length, 1);
+  assert.equal(warnings[0].includes(secret), false);
+  subscriber.emit('ready');
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(calls, 2);
+  assert.equal(warnings.length, 1);
 });
 
 test('Concurrent subscriptions cannot exceed five authorized rooms and failures free their reservations', async () => {

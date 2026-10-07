@@ -25,6 +25,11 @@ export class JobsGateway implements OnGatewayInit, OnModuleDestroy {
   @WebSocketServer() server!: Server;
   private readonly logger = new Logger(JobsGateway.name);
   private readonly pendingRooms = new WeakMap<Socket, Set<string>>();
+  private readonly subscribeUpdates = () => {
+    void this.redis.subscriber.subscribe(UPDATE_CHANNEL).catch(() => {
+      this.logger.warn('Abonnement Redis indisponible ; nouvelle tentative à la reconnexion.');
+    });
+  };
 
   constructor(@Inject(RedisService) private readonly redis: RedisService, @Inject(JobsService) private readonly jobs: JobsService) {}
 
@@ -38,7 +43,7 @@ export class JobsGateway implements OnGatewayInit, OnModuleDestroy {
     }
   };
 
-  async afterInit() {
+  afterInit() {
     const leases = new WeakMap<IncomingMessage, SocketLease>();
     this.server.engine.opts.allowRequest = (request, callback) => {
       void admitSocket(this.redis.client, request).then(lease => {
@@ -60,11 +65,13 @@ export class JobsGateway implements OnGatewayInit, OnModuleDestroy {
       });
     });
     this.redis.subscriber.on('message', this.relay);
-    await this.redis.subscriber.subscribe(UPDATE_CHANNEL);
+    this.redis.subscriber.on('ready', this.subscribeUpdates);
+    if (this.redis.subscriber.status === 'ready') this.subscribeUpdates();
   }
 
   async onModuleDestroy() {
     this.redis.subscriber.off('message', this.relay);
+    this.redis.subscriber.off('ready', this.subscribeUpdates);
   }
 
   private async permitEvent(client: Socket): Promise<boolean> {

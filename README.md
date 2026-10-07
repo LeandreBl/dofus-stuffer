@@ -35,6 +35,8 @@ docker compose up --build -d
 
 Compose démarre **cinq services** : `web`, `api`, `worker`, `maintenance` et `redis`. Il ne lance pas Traefik et ne publie aucun nouveau port. Le front et l'API rejoignent le réseau du proxy existant avec leurs labels de routage. Redis et le worker restent sur un réseau interne distinct. Redis utilise le mot de passe de `.env`, conservé hors du dépôt et des images Docker.
 
+`REDIS_URL` doit cibler le nom Redis propre au projet : `redis://${COMPOSE_PROJECT_NAME}-redis:6379`. Ce nom est enregistré uniquement sur le réseau interne et évite qu'une API également reliée à Traefik joigne le Redis d'une autre application. Pour une installation existante utilisant `redis://redis:6379`, modifier cette ligne dans `.env`, puis relancer `docker compose up --build -d` ; les volumes peuvent être conservés.
+
 Avec les domaines fournis, l'interface sera accessible à **https://dofus-stuffer.notdotio.com** et l'API à **https://dofus-stuffer.api.notdotio.com**. Le domaine de l'interface sert aussi `/api` et `/socket.io`. Les labels prévoient HTTPS, la redirection depuis HTTP et HSTS. Le provider Docker de Traefik doit être actif et ses certificats couvrir les domaines de `.env`. Sa mise à jour reste sous le contrôle de l'administrateur du VPS ; le [rapport de sécurité](docs/SECURITY_AUDIT.md) indique la version vérifiée.
 
 Pour contrôler puis arrêter l'application en conservant les volumes :
