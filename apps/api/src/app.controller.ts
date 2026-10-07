@@ -1,14 +1,15 @@
-import { Body, Controller, Get, Header, HttpCode, HttpException, Inject, Param, Post, Query, Req, ServiceUnavailableException } from '@nestjs/common';
+import { Body, Controller, Get, Header, Headers, HttpCode, HttpException, Inject, Param, Post, Query, Req, ServiceUnavailableException } from '@nestjs/common';
 import { CatalogService } from './catalog.service.js';
 import { JobsService } from './jobs.service.js';
 import { RedisService } from './redis.service.js';
 import { validateRequest } from './validation.js';
 import { getMaintenanceStatus, getServerPrices } from './maintenance.js';
+import { clientAddress, clientId, consumeRate } from './abuse-limits.js';
+import type { IncomingMessage } from 'node:http';
+import { bearerToken } from './security.js';
 
 @Controller()
 export class AppController {
-  private readonly requestWindows = new Map<string, { since: number; count: number }>();
-
   constructor(@Inject(CatalogService) private readonly catalog: CatalogService, @Inject(RedisService) private readonly redis: RedisService,
     @Inject(JobsService) private readonly jobs: JobsService) {}
 
@@ -43,27 +44,29 @@ export class AppController {
 
   @Post('jobs')
   @Header('Cache-Control', 'no-store')
-  async create(@Body() body: unknown, @Req() request: { ip?: string }) {
-    const now = Date.now();
-    for (const [key, value] of this.requestWindows) if (now - value.since > 60_000) this.requestWindows.delete(key);
-    const key = request.ip || 'local';
-    const bucket = this.requestWindows.get(key) || { since: now, count: 0 };
-    if (bucket.count >= 20 || this.requestWindows.size > 10_000) throw new HttpException('Trop de recherches. Réessayez dans une minute.', 429);
-    bucket.count += 1;
-    this.requestWindows.set(key, bucket);
+  async create(@Body() body: unknown, @Req() request: IncomingMessage) {
+    const identity = clientId(clientAddress(request));
+    let permitted: boolean;
+    try { permitted = await consumeRate(this.redis.client, 'create', identity, 20); }
+    catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
+    if (!permitted) throw new HttpException('Trop de recherches. Réessayez dans une minute.', 429);
     const catalog = this.catalog.data;
-    return this.jobs.create(validateRequest(body, catalog), catalog);
+    const input = validateRequest(body, catalog);
+    try { permitted = await consumeRate(this.redis.client, 'compute', identity, 1_800, 600_000, input.seconds); }
+    catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
+    if (!permitted) throw new HttpException('Budget de calcul atteint. Réessayez dans quelques minutes.', 429);
+    return this.jobs.create(input, catalog, identity);
   }
 
   @Get('jobs/:id')
   @Header('Cache-Control', 'no-store')
-  snapshot(@Param('id') id: string, @Query('token') token: unknown) { return this.jobs.snapshot(id, token); }
+  snapshot(@Param('id') id: string, @Headers('authorization') authorization: unknown) { return this.jobs.snapshot(id, bearerToken(authorization)); }
 
   @Post('jobs/:id/cancel')
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')
-  cancel(@Param('id') id: string, @Body() body: unknown, @Query('token') queryToken?: unknown) {
+  cancel(@Param('id') id: string, @Body() body: unknown, @Headers('authorization') authorization: unknown) {
     const token = body && typeof body === 'object' ? (body as { token?: unknown }).token : undefined;
-    return this.jobs.cancel(id, token || queryToken);
+    return this.jobs.cancel(id, bearerToken(authorization) || token);
   }
 }

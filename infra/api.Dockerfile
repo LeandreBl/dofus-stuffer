@@ -1,4 +1,5 @@
-FROM node:24-alpine AS build
+ARG NODE_IMAGE
+FROM ${NODE_IMAGE} AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/package.json
@@ -10,7 +11,7 @@ COPY packages/shared packages/shared
 COPY apps/api apps/api
 RUN npm run build -w @dofus/shared && npm run build -w @dofus/api
 
-FROM node:24-alpine AS runtime
+FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 COPY package.json package-lock.json ./

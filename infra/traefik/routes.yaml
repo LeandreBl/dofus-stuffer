@@ -5,7 +5,7 @@ http:
       rule: PathPrefix(`/api`) || PathPrefix(`/socket.io`)
       priority: 100
       service: api
-      middlewares: [compression]
+      middlewares: [api-rate, api-connections, compression]
     web:
       entryPoints: [web]
       rule: PathPrefix(`/`)
@@ -20,5 +20,13 @@ http:
         servers:
           - url: http://web:80
   middlewares:
+    api-rate:
+      rateLimit:
+        average: 120
+        period: 1m
+        burst: 60
+    api-connections:
+      inFlightReq:
+        amount: 200
     compression:
       compress: {}

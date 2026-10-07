@@ -21,47 +21,41 @@ Le projet est un **monorepo TypeScript avec npm workspaces** : React 19 et Vite 
 
 ## Lancer sur Linux
 
-**Linux est la cible principale de déploiement.** Installer Docker Engine et le plugin Docker Compose, puis copier ou cloner le projet sur le serveur. Docker Desktop, Windows, Node.js et Python ne sont pas nécessaires sur cet hôte.
+Installer Docker Engine et le plugin Docker Compose, puis cloner le dépôt sur le VPS. Le Traefik déjà installé reste le point d'entrée de l'application.
 
-Depuis le dossier du projet :
+Préparer une seule fois `.env` à partir de [`.env.example`](.env.example). Renseigner `REDIS_PASSWORD`, puis adapter les noms du réseau Docker, du conteneur proxy, des points d'entrée et du resolver aux paramètres de Traefik existants. Les domaines, images, ports internes, limites de ressources et fournisseurs sont également regroupés dans ce fichier. Les valeurs entre guillemets simples restent littérales, notamment pour un mot de passe contenant des caractères spéciaux.
 
-```sh
-sh scripts/start.sh
-```
+`TRAEFIK_NETWORK` désigne son réseau Docker partagé et `TRAEFIK_PROXY_HOST` son nom accessible sur ce réseau. Laisser `TRAEFIK_CERT_RESOLVER` vide si Traefik fournit déjà les certificats ; sinon, renseigner le nom de son resolver ACME. Aucun script de lancement, Node.js ou Python n'est nécessaire sur le VPS.
 
-Le script crée `.env` à partir de `.env.example` s'il est absent, construit les images, démarre les six services et attend Redis ainsi qu'un worker disponible. Il conserve une configuration `.env` existante et affiche l'adresse à ouvrir. Le premier lancement télécharge les images et dépendances ; le catalogue et les icônes du jeu sont fournis dans le projet.
-
-Par défaut, l'application répond sur **http://localhost:8080** depuis le serveur. Le poste de développement actuel utilise le port 8180 dans son `.env` local ; ce fichier n'est pas versionné.
-
-### Accès depuis un autre ordinateur
-
-Pour servir l'application sur l'IP du serveur Linux, créer `.env` depuis `.env.example`, puis y définir :
-
-```dotenv
-APP_PORT=8080
-APP_BIND_ADDRESS=0.0.0.0
-```
-
-Relancer `sh scripts/start.sh`, puis ouvrir `http://IP_DU_SERVEUR:8080`. Le port choisi doit être autorisé par le pare-feu du serveur. Seul Traefik est publié ; l'API, le worker et Redis restent sur le réseau interne Docker. Pour un domaine public en HTTPS, configurer les certificats et le routage de ce domaine dans Traefik : la configuration fournie sert actuellement en HTTP.
-
-## Docker Compose
-
-Depuis la racine du projet :
+Depuis la racine :
 
 ```sh
 docker compose up --build -d
-docker compose ps
 ```
 
-Le fichier `compose.yaml` lance six services : Traefik, le front React servi par Nginx, l'API NestJS avec Socket.IO, le worker d'optimisation, la maintenance hebdomadaire et Redis.
+Compose démarre **cinq services** : `web`, `api`, `worker`, `maintenance` et `redis`. Il ne lance pas Traefik et ne publie aucun nouveau port. Le front et l'API rejoignent le réseau du proxy existant avec leurs labels de routage. Redis et le worker restent sur un réseau interne distinct. Redis utilise le mot de passe de `.env`, conservé hors du dépôt et des images Docker.
 
-Pour arrêter les services en conservant le volume Redis :
+Avec les domaines fournis, l'interface sera accessible à **https://dofus-stuffer.notdotio.com** et l'API à **https://dofus-stuffer.api.notdotio.com**. Le domaine de l'interface sert aussi `/api` et `/socket.io`. Les labels prévoient HTTPS, la redirection depuis HTTP et HSTS. Le provider Docker de Traefik doit être actif et ses certificats couvrir les domaines de `.env`. Sa mise à jour reste sous le contrôle de l'administrateur du VPS ; le [rapport de sécurité](docs/SECURITY_AUDIT.md) indique la version vérifiée.
+
+Pour contrôler puis arrêter l'application en conservant les volumes :
 
 ```sh
-sh scripts/stop.sh
+docker compose ps
+docker compose logs --tail=100 api worker redis
+docker compose down
 ```
 
-L'arrêt équivaut à `docker compose down` et conserve les volumes Redis et données de jeu. Fermer le navigateur ne stoppe pas les conteneurs. Les services redémarrent avec Docker grâce à `restart: unless-stopped`, sauf s'ils ont été arrêtés explicitement. Les profils et corrections manuelles de prix sont conservés dans le navigateur ; les états de recherche côté serveur ont une durée de conservation de 24 heures.
+Fermer le navigateur ne stoppe pas les conteneurs. Les services redémarrent avec Docker selon `RESTART_POLICY`. Les profils et corrections manuelles de prix sont conservés dans le navigateur ; les recherches côté serveur expirent après 24 heures.
+
+### Développement local facultatif
+
+Le fichier `compose.local.yaml` ajoute un proxy HTTP local uniquement lorsqu'il est explicitement sélectionné :
+
+```sh
+docker compose -f compose.yaml -f compose.local.yaml up --build -d
+```
+
+Ce mode est indépendant du Traefik du VPS. Il expose l'interface sur `http://localhost:APP_PORT` ; le poste de développement utilise actuellement le port 8180. Pour arrêter ce mode, utiliser les mêmes deux fichiers avec `down`.
 
 ## Utilisation
 
@@ -149,7 +143,7 @@ flowchart LR
     renderer["@dofus/renderer<br/>Moteur de rendu du personnage"] -.-> browser
 ```
 
-Les flèches en pointillés représentent les modules utilisés par le navigateur et le worker. Compose lance **six services** : `traefik`, `web`, `api`, `worker`, `maintenance` et `redis`. Les deux packages du schéma sont intégrés au code des applications.
+Les flèches en pointillés représentent les modules utilisés par le navigateur et le worker. Compose lance **cinq services** : `web`, `api`, `worker`, `maintenance` et `redis`. Traefik est fourni par le VPS ; le mode local facultatif dispose de son propre proxy. Les deux packages du schéma sont intégrés au code des applications.
 
 ### Du critère au résultat
 
@@ -228,7 +222,7 @@ L'import lit uniquement les fichiers statiques du jeu et conserve la provenance,
 | `packages/renderer/` | Moteur WebGL du personnage, avec provenance et références amont |
 | `data/` | Catalogue versionné, provenance, effets et cas de référence |
 | `infra/` et `compose.yaml` | Images Docker, Nginx et routage Traefik |
-| `scripts/` | Lancement et arrêt Linux, import du catalogue |
+| `scripts/` | Import du catalogue et des ressources |
 | `tests/` et `apps/api/test/` | Tests du moteur, de l'API et de l'intégration |
 | `docs/` | Plan produit, architecture, maintenance et rapports de vérification |
 | `graphify-out/` | Inventaire et extraction des relations du projet générés par Graphify |
@@ -247,13 +241,14 @@ L'ancienne maquette ne sert plus au lancement de l'application actuelle.
 | [Catalogue et provenance](data/README.md) | Reproduire un import, connaître les sources et leurs limites |
 | [Références de calcul](data/CALCULATION_NOTES.md) | Examiner les conventions de simulation et les cas de référence |
 | [Rapport de vérification](docs/VALIDATION.md) | Consulter les campagnes de tests et les parcours déjà vérifiés |
+| [Audit et corrections de sécurité](docs/SECURITY_AUDIT.md) | Examiner les protections appliquées et le lancement sur VPS avec Traefik |
 | [Provenance du renderer](packages/renderer/PROVENANCE.md) | Identifier la source et les adaptations du moteur d'apparence |
 
 ## Dépannage Linux
 
 ```sh
-docker compose logs --tail=100 traefik api worker redis
-curl http://localhost:8080/api/health
+docker compose logs --tail=100 api worker redis
+curl https://dofus-stuffer.api.notdotio.com/api/health
 ```
 
-Le point de santé doit indiquer `redis: true` et au moins un `worker`. Adapter le port à `.env`. Si Docker ne répond pas, vérifier que son service est démarré et que l'utilisateur dispose des droits pour l'utiliser. Les scripts s'exécutent avec `sh` même sans permission d'exécution sur les fichiers ; leurs fins de ligne sont fixées à LF par `.gitattributes`.
+Le point de santé doit indiquer `redis: true` et au moins un `worker`. Adapter le port à `.env`. Si Docker ne répond pas, vérifier que son service est démarré et que l'utilisateur dispose des droits pour l'utiliser. Les fichiers de configuration sont chargés directement par Compose ; les fins de ligne sont fixées à LF par `.gitattributes`.

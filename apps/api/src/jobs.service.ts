@@ -1,12 +1,14 @@
-import { Inject, Injectable, NotFoundException, ServiceUnavailableException, type OnModuleDestroy } from '@nestjs/common';
+import { HttpException, Inject, Injectable, NotFoundException, ServiceUnavailableException, type OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
 import type { Catalog, OptimizationRequest } from '@dofus/shared';
-import { cancellationKey, MAX_QUEUED_JOBS, QUEUE_NAME, RETENTION_SECONDS, tokenKey } from './config.js';
+import { cancellationKey, QUEUE_NAME, RETENTION_SECONDS, tokenKey } from './config.js';
 import { RedisService } from './redis.service.js';
 import { hashToken, issueToken, validJobId, verifyToken } from './security.js';
 import { isTerminal, readSnapshot, writeSnapshot, type JobSnapshot } from './state.js';
 import { CatalogService } from './catalog.service.js';
+import { clientId } from './abuse-limits.js';
+import { reservationKey, reserveJob } from './job-admission.js';
 
 export interface OptimizationJobData { request: OptimizationRequest; createdAt: string; catalogVersion: string; catalogRevision?: string }
 
@@ -29,12 +31,13 @@ export class JobsService implements OnModuleDestroy {
 
   async onModuleDestroy() { await this.queue.close(); }
 
-  async create(request: OptimizationRequest, catalog: Catalog = this.catalog.data) {
-    const counts = await this.queue.getJobCounts('wait', 'active', 'delayed');
-    if ((counts.wait || 0) + (counts.active || 0) + (counts.delayed || 0) >= MAX_QUEUED_JOBS) {
-      throw new ServiceUnavailableException('La file de recherche est pleine. Réessayez dans quelques instants.');
-    }
+  async create(request: OptimizationRequest, catalog: Catalog = this.catalog.data, identity = clientId('127.0.0.1')) {
     const id = randomUUID();
+    let admission: number;
+    try { admission = await reserveJob(this.redis.client, this.queue, identity, id); }
+    catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
+    if (admission === 1) throw new ServiceUnavailableException('La file de recherche est pleine. Réessayez dans quelques instants.');
+    if (admission === 2) throw new HttpException('Maximum trois recherches en attente ou en cours. Terminez ou annulez une recherche.', 429);
     const token = issueToken();
     const now = new Date().toISOString();
     const snapshot: JobSnapshot = {
@@ -43,13 +46,21 @@ export class JobsService implements OnModuleDestroy {
       results: [], catalogVersion: catalog.version, catalogRevision: catalog.revision,
       message: 'Recherche en attente d’un moteur disponible.',
     };
-    await this.redis.client.set(tokenKey(id), hashToken(token), 'EX', RETENTION_SECONDS);
-    await writeSnapshot(this.redis.client, snapshot);
     try {
+      await this.redis.client.set(tokenKey(id), hashToken(token), 'EX', RETENTION_SECONDS);
+      await writeSnapshot(this.redis.client, snapshot);
       await this.queue.add('optimize', { request, createdAt: now, catalogVersion: catalog.version, catalogRevision: catalog.revision }, { jobId: id });
     } catch {
-      await writeSnapshot(this.redis.client, { ...snapshot, status: 'failed', message: 'La recherche n’a pas pu être mise en file.' });
-      throw new ServiceUnavailableException('Le moteur de recherche est temporairement indisponible.');
+      // A lost Redis response can occur after the job was added. Preserve its slot and receipt in that case.
+      let queued: boolean;
+      try { queued = Boolean(await this.queue.getJob(id)); }
+      catch { throw new ServiceUnavailableException('Le moteur de recherche est temporairement indisponible.'); }
+      if (!queued) {
+        await writeSnapshot(this.redis.client, { ...snapshot, status: 'failed', message: 'La recherche n’a pas pu être mise en file.' });
+        throw new ServiceUnavailableException('Le moteur de recherche est temporairement indisponible.');
+      }
+    } finally {
+      await this.redis.client.zrem(reservationKey(this.queue), id).catch(() => {});
     }
     return { id, token, status: 'queued' as const };
   }

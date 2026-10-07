@@ -1,45 +1,70 @@
-name: dofus-stuffer
+name: ${COMPOSE_PROJECT_NAME:?}
+x-security: &security
+  read_only: ${CONTAINER_READ_ONLY:?}
+  cap_drop: ["${CONTAINER_CAP_DROP:?}"]
+  security_opt: ["no-new-privileges:${CONTAINER_NO_NEW_PRIVILEGES:?}"]
+  tmpfs: ["${CONTAINER_TMPFS:?}"]
+  pids_limit: ${CONTAINER_PIDS_LIMIT:?}
+  labels:
+    traefik.enable: "false"
+x-api-build: &api-build
+  context: .
+  dockerfile: infra/api.Dockerfile
+  args:
+    NODE_IMAGE: ${NODE_IMAGE:?}
+x-api-environment: &api-environment
+  NODE_ENV: ${NODE_ENV:?}
+  REDIS_URL: ${REDIS_URL:?}
+  REDIS_PASSWORD: ${REDIS_PASSWORD:?Définir REDIS_PASSWORD dans .env}
+  CATALOG_PATH: ${CATALOG_PATH:?}
+  DATA_RUNTIME_DIR: ${DATA_RUNTIME_DIR:?}
 services:
-  traefik:
-    image: traefik:v3.6.2
-    command:
-      - --entrypoints.web.address=:80
-      - --providers.file.filename=/etc/traefik/routes.yaml
-      - --ping=true
-      - --log.level=INFO
-    ports:
-      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}:80"
-    volumes:
-      - ./infra/traefik/routes.yaml:/etc/traefik/routes.yaml:ro
-    depends_on:
-      web:
-        condition: service_started
-      api:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "traefik", "healthcheck", "--ping"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
   web:
+    <<: *security
+    image: ${WEB_IMAGE:?}
+    user: ${WEB_USER:?}
     build:
       context: .
       dockerfile: infra/web.Dockerfile
-    restart: unless-stopped
-
-  api:
-    build:
-      context: .
-      dockerfile: infra/api.Dockerfile
-    image: dofus-stuffer-api:local
+      args:
+        NODE_IMAGE: ${NODE_IMAGE:?}
+        NGINX_IMAGE: ${NGINX_IMAGE:?}
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      REDIS_URL: redis://redis:6379
-      CATALOG_PATH: /app/data/catalog.json
-      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      WEB_PORT: ${WEB_PORT:?}
+      CSP_CONNECT_SOURCES: ${CSP_CONNECT_SOURCES:?}
+    restart: ${RESTART_POLICY:?}
+    mem_limit: ${WEB_MEMORY_LIMIT:?}
+    cpus: ${WEB_CPUS:?}
+    tmpfs:
+      - ${CONTAINER_TMPFS:?}
+      - ${WEB_CACHE_TMPFS:?}
+      - ${WEB_RUN_TMPFS:?}
+      - ${WEB_CONFIG_TMPFS:?}
+    networks: [existing-proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:?}
+      traefik.http.routers.dofus-stuffer-web.rule: Host(`${PUBLIC_APP_HOST:?}`)
+      traefik.http.routers.dofus-stuffer-web.entrypoints: ${TRAEFIK_HTTPS_ENTRYPOINT:?}
+      traefik.http.routers.dofus-stuffer-web.tls: "true"
+      traefik.http.routers.dofus-stuffer-web.tls.certresolver: ${TRAEFIK_CERT_RESOLVER-}
+      traefik.http.routers.dofus-stuffer-web.middlewares: dofus-stuffer-https
+      traefik.http.routers.dofus-stuffer-http.rule: Host(`${PUBLIC_APP_HOST:?}`) || Host(`${PUBLIC_API_HOST:?}`)
+      traefik.http.routers.dofus-stuffer-http.entrypoints: ${TRAEFIK_HTTP_ENTRYPOINT:?}
+      traefik.http.routers.dofus-stuffer-http.middlewares: dofus-stuffer-redirect
+      traefik.http.middlewares.dofus-stuffer-redirect.redirectscheme.scheme: https
+      traefik.http.middlewares.dofus-stuffer-redirect.redirectscheme.permanent: "true"
+      traefik.http.services.dofus-stuffer-web.loadbalancer.server.port: ${WEB_PORT:?}
+      traefik.http.middlewares.dofus-stuffer-https.headers.stsseconds: ${HSTS_SECONDS:?}
+  api:
+    <<: *security
+    build: *api-build
+    image: ${API_IMAGE:?}
+    environment:
+      <<: *api-environment
+      PORT: ${API_PORT:?}
+      TRUSTED_PROXY_HOSTS: ${TRAEFIK_PROXY_HOST:?}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?}
       ROLE: api
     volumes:
       - game-data:/var/lib/dofus-stuffer:ro
@@ -47,79 +72,105 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
-      interval: 10s
-      timeout: 5s
-      start_period: 20s
-      retries: 5
-    restart: unless-stopped
-
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:'+process.env.PORT+'/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: ${API_HEALTH_INTERVAL:?}
+      timeout: ${API_HEALTH_TIMEOUT:?}
+      start_period: ${API_HEALTH_START_PERIOD:?}
+      retries: ${API_HEALTH_RETRIES:?}
+    restart: ${RESTART_POLICY:?}
+    mem_limit: ${API_MEMORY_LIMIT:?}
+    cpus: ${API_CPUS:?}
+    networks: [database, existing-proxy]
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:?}
+      traefik.http.routers.dofus-stuffer-api.rule: Host(`${PUBLIC_API_HOST:?}`) || (Host(`${PUBLIC_APP_HOST:?}`) && (PathPrefix(`/api`) || PathPrefix(`/socket.io`)))
+      traefik.http.routers.dofus-stuffer-api.entrypoints: ${TRAEFIK_HTTPS_ENTRYPOINT:?}
+      traefik.http.routers.dofus-stuffer-api.priority: ${API_ROUTER_PRIORITY:?}
+      traefik.http.routers.dofus-stuffer-api.tls: "true"
+      traefik.http.routers.dofus-stuffer-api.tls.certresolver: ${TRAEFIK_CERT_RESOLVER-}
+      traefik.http.routers.dofus-stuffer-api.middlewares: dofus-stuffer-rate,dofus-stuffer-connections,dofus-stuffer-compression,dofus-stuffer-https
+      traefik.http.services.dofus-stuffer-api.loadbalancer.server.port: ${API_PORT:?}
+      traefik.http.middlewares.dofus-stuffer-rate.ratelimit.average: ${API_RATE_AVERAGE:?}
+      traefik.http.middlewares.dofus-stuffer-rate.ratelimit.period: ${API_RATE_PERIOD:?}
+      traefik.http.middlewares.dofus-stuffer-rate.ratelimit.burst: ${API_RATE_BURST:?}
+      traefik.http.middlewares.dofus-stuffer-connections.inflightreq.amount: ${API_INFLIGHT_LIMIT:?}
+      traefik.http.middlewares.dofus-stuffer-compression.compress: "true"
   worker:
-    image: dofus-stuffer-api:local
-    build:
-      context: .
-      dockerfile: infra/api.Dockerfile
+    <<: *security
+    image: ${API_IMAGE:?}
+    build: *api-build
     environment:
-      NODE_ENV: production
-      REDIS_URL: redis://redis:6379
-      CATALOG_PATH: /app/data/catalog.json
-      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      <<: *api-environment
       ROLE: worker
-      WORKER_CONCURRENCY: 1
-      MAX_CANDIDATES: ${MAX_CANDIDATES:-10000000}
+      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:?}
+      MAX_CANDIDATES: ${MAX_CANDIDATES:?}
     volumes:
       - game-data:/var/lib/dofus-stuffer:ro
     depends_on:
       redis:
         condition: service_healthy
-    cpus: 2
-    mem_limit: 768m
-    stop_grace_period: 20s
-    restart: unless-stopped
-
+    cpus: ${WORKER_CPUS:?}
+    mem_limit: ${WORKER_MEMORY_LIMIT:?}
+    stop_grace_period: ${WORKER_STOP_GRACE_PERIOD:?}
+    restart: ${RESTART_POLICY:?}
+    networks: [database]
   maintenance:
-    image: dofus-stuffer-api:local
-    build:
-      context: .
-      dockerfile: infra/api.Dockerfile
+    <<: *security
+    image: ${API_IMAGE:?}
+    build: *api-build
     environment:
-      NODE_ENV: production
-      REDIS_URL: redis://redis:6379
-      CATALOG_PATH: /app/data/catalog.json
-      DATA_RUNTIME_DIR: /var/lib/dofus-stuffer
+      <<: *api-environment
       ROLE: maintenance
-      MAINTENANCE_CRON: ${MAINTENANCE_CRON:-0 3 * * 1}
-      MAINTENANCE_TIMEZONE: ${MAINTENANCE_TIMEZONE:-Europe/Paris}
-      CATALOG_FEED_URL: ${CATALOG_FEED_URL:-}
-      PRICE_FEED_URL: ${PRICE_FEED_URL:-}
-      PATCH_FEED_URL: ${PATCH_FEED_URL:-https://www.dofus.com/fr/rss/changelog.xml}
+      MAINTENANCE_CRON: ${MAINTENANCE_CRON:?}
+      MAINTENANCE_TIMEZONE: ${MAINTENANCE_TIMEZONE:?}
+      CATALOG_FEED_URL: ${CATALOG_FEED_URL-}
+      PRICE_FEED_URL: ${PRICE_FEED_URL-}
+      PATCH_FEED_URL: ${PATCH_FEED_URL:?}
     volumes:
       - game-data:/var/lib/dofus-stuffer
     depends_on:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "--input-type=module", "-e", "import {Queue} from 'bullmq';import {Redis} from 'ioredis';const r=new Redis(process.env.REDIS_URL,{maxRetriesPerRequest:1});const q=new Queue('dofus-maintenance',{connection:r});try{if(!(await q.getWorkersCount())||!(await q.getJobScheduler('weekly-data-refresh')))process.exitCode=1}catch{process.exitCode=1}finally{await q.close();await r.quit()}"]
-      interval: 30s
-      timeout: 10s
-      start_period: 30s
-      retries: 3
-    mem_limit: 2g
-    stop_grace_period: 120s
-    restart: unless-stopped
-
+      test: ["CMD", "node", "--input-type=module", "-e", "import {Queue} from 'bullmq';import {Redis} from 'ioredis';const url=new URL(process.env.REDIS_URL);url.password=process.env.REDIS_PASSWORD;const r=new Redis(url.href,{maxRetriesPerRequest:1});const q=new Queue('dofus-maintenance',{connection:r});try{if(!(await q.getWorkersCount())||!(await q.getJobScheduler('weekly-data-refresh')))process.exitCode=1}catch{process.exitCode=1}finally{await q.close();await r.quit()}"]
+      interval: ${MAINTENANCE_HEALTH_INTERVAL:?}
+      timeout: ${MAINTENANCE_HEALTH_TIMEOUT:?}
+      start_period: ${MAINTENANCE_HEALTH_START_PERIOD:?}
+      retries: ${MAINTENANCE_HEALTH_RETRIES:?}
+    mem_limit: ${MAINTENANCE_MEMORY_LIMIT:?}
+    stop_grace_period: ${MAINTENANCE_STOP_GRACE_PERIOD:?}
+    restart: ${RESTART_POLICY:?}
+    cpus: ${MAINTENANCE_CPUS:?}
+    networks: [database, maintenance-egress]
   redis:
-    image: redis:8-alpine
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "512mb", "--maxmemory-policy", "noeviction"]
+    <<: *security
+    image: ${REDIS_IMAGE:?}
+    user: ${REDIS_USER:?}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?Définir REDIS_PASSWORD dans .env}
+      REDIS_MAX_MEMORY: ${REDIS_MAX_MEMORY:?}
+      REDIS_MAX_MEMORY_POLICY: ${REDIS_MAX_MEMORY_POLICY:?}
+      REDIS_APPENDONLY: ${REDIS_APPENDONLY:?}
+    command: ["sh", "-c", "exec redis-server --appendonly \"$$REDIS_APPENDONLY\" --maxmemory \"$$REDIS_MAX_MEMORY\" --maxmemory-policy \"$$REDIS_MAX_MEMORY_POLICY\" --requirepass \"$$REDIS_PASSWORD\""]
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    restart: unless-stopped
-
+      test: ["CMD-SHELL", "REDISCLI_AUTH=\"$$REDIS_PASSWORD\" redis-cli --no-auth-warning ping"]
+      interval: ${REDIS_HEALTH_INTERVAL:?}
+      timeout: ${REDIS_HEALTH_TIMEOUT:?}
+      retries: ${REDIS_HEALTH_RETRIES:?}
+    restart: ${RESTART_POLICY:?}
+    mem_limit: ${REDIS_MEMORY_LIMIT:?}
+    cpus: ${REDIS_CPUS:?}
+    networks: [database]
 volumes:
   redis-data:
   game-data:
+networks:
+  existing-proxy:
+    external: true
+    name: ${TRAEFIK_NETWORK:?}
+  database:
+    internal: true
+  maintenance-egress:

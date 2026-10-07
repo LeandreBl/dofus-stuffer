@@ -79,7 +79,17 @@ export function resolveUnityResource(tree, translations, accept = () => true) {
 }
 
 async function readResponse(url, fetcher, maxBytes) {
-  const response = await fetcher(url, { headers: { 'User-Agent':'DofusStuffer-weekly-update/1.0', Accept:'application/json' }, signal:AbortSignal.timeout(90000) });
+  let current = new URL(url), response;
+  const signal = AbortSignal.timeout(90000);
+  for (let redirects = 0; redirects <= 5; redirects++) {
+    if (current.protocol !== 'https:' || current.username || current.password) throw new Error('La source du catalogue doit utiliser HTTPS.');
+    response = await fetcher(current.href, { redirect:'manual', headers: { 'User-Agent':'DofusStuffer-weekly-update/1.0', Accept:'application/json' }, signal });
+    if (![301,302,303,307,308].includes(response.status)) break;
+    const location = response.headers.get('location');
+    await response.body?.cancel();
+    if (!location || redirects === 5) throw new Error('Redirection du catalogue invalide.');
+    current = new URL(location, current);
+  }
   if (!response.ok) throw new Error(`Source de catalogue indisponible (HTTP ${response.status}).`);
   if (Number(response.headers.get('content-length')) > maxBytes) throw new Error('Source de catalogue trop volumineuse.');
   const chunks = [];

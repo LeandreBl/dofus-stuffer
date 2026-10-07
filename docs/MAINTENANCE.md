@@ -14,7 +14,7 @@ PRICE_FEED_URL=
 PATCH_FEED_URL=https://www.dofus.com/fr/rss/changelog.xml
 ```
 
-Relancer `sh scripts/start.sh` après une modification. `MAINTENANCE_TIMEZONE` pilote les changements d'heure ; le fuseau horaire de l'hôte ne remplace pas ce réglage.
+Relancer `docker compose up --build -d` après une modification de `.env`. Les URL de fournisseurs doivent utiliser HTTPS ; une redirection vers HTTP est également refusée. `MAINTENANCE_TIMEZONE` pilote les changements d'heure ; le fuseau horaire de l'hôte ne remplace pas ce réglage.
 
 ## Catalogue
 

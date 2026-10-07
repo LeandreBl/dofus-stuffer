@@ -37,9 +37,19 @@ export function maintenanceOptions(): MaintenanceOptions {
     cron: process.env.MAINTENANCE_CRON || DEFAULT_CRON, timezone: process.env.MAINTENANCE_TIMEZONE || DEFAULT_TIMEZONE };
 }
 export async function fetchLimited(url: string, maxBytes: number, fetcher: typeof fetch = fetch): Promise<string> {
-  const parsed = new URL(url);
-  if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('Le flux doit utiliser HTTP ou HTTPS.');
-  const response = await fetcher(url, { signal: AbortSignal.timeout(45_000), headers: { 'User-Agent': 'Dofus-Stuffer/0.2 (+weekly-data-refresh)' } });
+  let current = new URL(url);
+  let response: Response | undefined;
+  const signal = AbortSignal.timeout(45_000);
+  for (let redirects = 0; redirects <= 5; redirects++) {
+    if (current.protocol !== 'https:' || current.username || current.password) throw new Error('Le flux doit utiliser HTTPS sans identifiants dans l’URL.');
+    response = await fetcher(current.href, { signal, redirect: 'manual', headers: { 'User-Agent': 'Dofus-Stuffer/0.2 (+weekly-data-refresh)' } });
+    if (![301, 302, 303, 307, 308].includes(response.status)) break;
+    const location = response.headers.get('location');
+    await response.body?.cancel();
+    if (!location || redirects === 5) throw new Error('Flux redirigé trop de fois ou sans destination.');
+    current = new URL(location, current);
+  }
+  if (!response) throw new Error('Flux vide.');
   if (!response.ok) throw new Error(`Source indisponible (HTTP ${response.status}).`);
   if (Number(response.headers.get('content-length')) > maxBytes) throw new Error('Flux trop volumineux.');
   if (!response.body) throw new Error('Flux vide.');

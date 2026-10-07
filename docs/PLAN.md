@@ -1,6 +1,6 @@
 # Plan produit et développement
 
-Dofus Stuffer cible Dofus PC, avec le PvM en premier. La base applicative est maintenant une application React et NestJS, dotée d'un catalogue réel, d'un calculateur partagé et d'une recherche asynchrone. L'ancienne maquette est archivée dans `legacy/prototype/`. Le déploiement cible Linux avec Docker Engine et Docker Compose ; `sh scripts/start.sh` lance la stack.
+Dofus Stuffer cible Dofus PC, avec le PvM en premier. La base applicative est maintenant une application React et NestJS, dotée d'un catalogue réel, d'un calculateur partagé et d'une recherche asynchrone. L'ancienne maquette est archivée dans `legacy/prototype/`. Le déploiement cible Linux avec Docker Engine et Docker Compose ; après configuration de `.env`, `docker compose up --build -d` lance les cinq services applicatifs derrière le Traefik existant du VPS.
 
 ## Parcours retenu
 

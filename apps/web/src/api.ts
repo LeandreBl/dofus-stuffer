@@ -67,12 +67,13 @@ export const api = {
     }),
   job: ({ id, token }: JobReceipt) =>
     request<JobSnapshot>(
-      `/jobs/${encodeURIComponent(id)}?token=${encodeURIComponent(token)}`,
+      `/jobs/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } },
     ),
   cancel: ({ id, token }: JobReceipt) =>
     request<JobSnapshot>(`/jobs/${encodeURIComponent(id)}/cancel`, {
       method: "POST",
-      body: JSON.stringify({ token }),
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({}),
     }),
 };
 

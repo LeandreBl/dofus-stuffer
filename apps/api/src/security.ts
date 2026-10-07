@@ -17,3 +17,7 @@ export function verifyToken(token: unknown, expectedHash: string | null): boolea
 export function validJobId(id: unknown): id is string {
   return typeof id === 'string' && /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id);
 }
+
+export function bearerToken(authorization: unknown): string | undefined {
+  return typeof authorization === 'string' ? /^Bearer ([A-Za-z0-9_-]{43})$/i.exec(authorization)?.[1] : undefined;
+}

@@ -33,7 +33,7 @@ test('Live stack: unrequested equipment maluses reduce the score and survive Red
       : await socket.waitFor(value => value.id === receipt.id && value.status === 'completed');
     assert.equal(complete.results[0].score, expected.score);
     assert.deepEqual(complete.results[0].maluses, expected.maluses);
-    const recovered = await fetch(`${base}/api/jobs/${receipt.id}?token=${receipt.token}`).then(response => response.json()) as JobSnapshot;
+    const recovered = await fetch(`${base}/api/jobs/${receipt.id}`, { headers: { Authorization: `Bearer ${receipt.token}` } }).then(response => response.json()) as JobSnapshot;
     assert.deepEqual(recovered.results[0].maluses, expected.maluses);
     assert.equal(recovered.results[0].score, expected.score);
   } finally { socket.close(); }
@@ -60,7 +60,7 @@ test('Live stack: native conditional spell scenarios remain distinct through opt
     const complete=subscribed.snapshot?.status==='completed'?subscribed.snapshot:await socket.waitFor(value=>value.id===receipt.id&&value.status==='completed');
     assert.ok(complete.results.length>0);
     assert.deepEqual(complete.results[0].constraints,expected);
-    const recovered=await fetch(`${base}/api/jobs/${receipt.id}?token=${receipt.token}`).then(r=>r.json()) as JobSnapshot;
+    const recovered=await fetch(`${base}/api/jobs/${receipt.id}`, { headers: { Authorization: `Bearer ${receipt.token}` } }).then(r=>r.json()) as JobSnapshot;
     assert.deepEqual(recovered.results[0].constraints,expected);
   }finally{socket.close();}
 });
@@ -97,7 +97,7 @@ test('Live stack: with-power and plain stat objectives keep distinct values thro
     assert.ok(complete.results.length > 0);
     assert.deepEqual(complete.results[0].constraints.map(entry => [entry.value, entry.satisfied]), [[combined, true], [strength, true]]);
     assert.equal(complete.results[0].stats.strength, strength);
-    const recovered = await fetch(`${base}/api/jobs/${receipt.id}?token=${receipt.token}`).then(value => value.json()) as JobSnapshot;
+    const recovered = await fetch(`${base}/api/jobs/${receipt.id}`, { headers: { Authorization: `Bearer ${receipt.token}` } }).then(value => value.json()) as JobSnapshot;
     assert.deepEqual(recovered.results[0].constraints, complete.results[0].constraints);
   } finally { socket.close(); }
 });
@@ -254,6 +254,8 @@ test('Live stack: capabilities isolate jobs, Redis pushes progress, reconnect re
   assert.equal(invalid.status, 400);
   const first = await create(request);
   assert.equal((await fetch(`${base}/api/jobs/${first.id}`)).status, 404);
+  assert.equal((await fetch(`${base}/api/jobs/${first.id}?token=${first.token}`)).status, 404);
+  assert.equal((await fetch(`${base}/api/jobs/${first.id}`, { headers: { Authorization: `Bearer ${'x'.repeat(43)}` } })).status, 404);
   const unauthorized = new SocketProbe(base);
   const subscribed = new SocketProbe(base);
   let reconnect: SocketProbe | undefined;
@@ -266,7 +268,7 @@ test('Live stack: capabilities isolate jobs, Redis pushes progress, reconnect re
     assert.match(complete.message || '', /Durée choisie écoulée/);
     assert.ok(complete.results.every(value => value.valid));
     assert.equal(unauthorized.snapshots.length, 0);
-    const recovered = await fetch(`${base}/api/jobs/${first.id}?token=${first.token}`).then(response => response.json()) as JobSnapshot;
+    const recovered = await fetch(`${base}/api/jobs/${first.id}`, { headers: { Authorization: `Bearer ${first.token}` } }).then(response => response.json()) as JobSnapshot;
     assert.equal(recovered.status, 'completed');
     assert.equal(recovered.progress.evaluated, complete.progress.evaluated);
     subscribed.close();
@@ -277,7 +279,7 @@ test('Live stack: capabilities isolate jobs, Redis pushes progress, reconnect re
     const second = await create({ ...request, seconds: 600 });
     assert.equal((await reconnect.subscribe(second.id, second.token)).ok, true);
     await reconnect.waitFor(value => value.id === second.id && value.status === 'running');
-    const cancel = await fetch(`${base}/api/jobs/${second.id}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: second.token }) });
+    const cancel = await fetch(`${base}/api/jobs/${second.id}/cancel`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${second.token}` }, body: '{}' });
     assert.equal(cancel.status, 200);
     const cancelled = await reconnect.waitFor(value => value.id === second.id && value.status === 'cancelled');
     assert.ok(cancelled.progress.elapsedMs < 30_000);
@@ -427,7 +429,7 @@ test('Live stack: zero, one and two global exo ceilings survive HTTP, Redis and 
       assert.deepEqual(complete.results[0].build.exoBonuses, [[], ['actionPoints'], ['actionPoints', 'movementPoints']][maxExos]);
       assert.deepEqual(complete.results[0].build.slots, { hat: item.id });
       assert.equal(complete.results[0].cost, [0, 500_000, 600_000][maxExos]);
-      const recovered = await fetch(`${base}/api/jobs/${receipt.id}?token=${receipt.token}`).then(value => value.json()) as JobSnapshot;
+      const recovered = await fetch(`${base}/api/jobs/${receipt.id}`, { headers: { Authorization: `Bearer ${receipt.token}` } }).then(value => value.json()) as JobSnapshot;
       assert.deepEqual(recovered.results[0].build.exoBonuses, complete.results[0].build.exoBonuses);
     }
   } finally { socket.close(); }
@@ -480,7 +482,7 @@ test('Live stack: independent critical chance and damage criteria survive valida
     ];
     const measured = complete.results[0].constraints.map(({ id, value, satisfied, supported }) => ({ id, value, satisfied, supported }));
     assert.deepEqual(measured, expected);
-    const recovered = await fetch(`${base}/api/jobs/${receipt.id}?token=${receipt.token}`).then(value => value.json()) as JobSnapshot;
+    const recovered = await fetch(`${base}/api/jobs/${receipt.id}`, { headers: { Authorization: `Bearer ${receipt.token}` } }).then(value => value.json()) as JobSnapshot;
     assert.equal(recovered.status, 'completed');
     assert.deepEqual(recovered.results[0].constraints, complete.results[0].constraints);
   } finally { socket.close(); }

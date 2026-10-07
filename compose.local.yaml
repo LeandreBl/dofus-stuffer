@@ -1,0 +1,47 @@
+# Optional local development. The default compose.yaml reuses an existing VPS proxy.
+services:
+  traefik:
+    image: ${TRAEFIK_IMAGE:?}
+    read_only: ${CONTAINER_READ_ONLY:?}
+    cap_drop: ["${CONTAINER_CAP_DROP:?}"]
+    security_opt: ["no-new-privileges:${CONTAINER_NO_NEW_PRIVILEGES:?}"]
+    tmpfs: ["${CONTAINER_TMPFS:?}"]
+    pids_limit: ${CONTAINER_PIDS_LIMIT:?}
+    labels:
+      traefik.enable: "false"
+    command:
+      - --entrypoints.web.address=:80
+      - --providers.file.filename=/etc/traefik/routes.yaml
+      - --ping=true
+      - --log.level=INFO
+    ports:
+      - "127.0.0.1:${APP_PORT:-8080}:80"
+    volumes:
+      - ./infra/traefik/routes.yaml:/etc/traefik/routes.yaml:ro
+    depends_on:
+      web:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: ${TRAEFIK_HEALTH_INTERVAL:?}
+      timeout: ${TRAEFIK_HEALTH_TIMEOUT:?}
+      retries: ${TRAEFIK_HEALTH_RETRIES:?}
+    restart: ${RESTART_POLICY:?}
+    mem_limit: ${TRAEFIK_MEMORY_LIMIT:?}
+    cpus: ${TRAEFIK_CPUS:?}
+    networks: [existing-proxy]
+  api:
+    depends_on:
+      traefik:
+        condition: service_started
+    environment:
+      TRUSTED_PROXY_HOSTS: traefik
+    labels:
+      traefik.enable: "false"
+  web:
+    labels:
+      traefik.enable: "false"
+networks:
+  existing-proxy:
+    external: false
+    name: ${LOCAL_PROXY_NETWORK:?}

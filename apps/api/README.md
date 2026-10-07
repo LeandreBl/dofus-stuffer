@@ -7,13 +7,15 @@ L’API NestJS répond derrière Traefik. Un processus distinct exécute la rech
 - `GET /api/health` vérifie Redis et indique le nombre de workers connectés ainsi que la version du catalogue.
 - `GET /api/catalog` expose le catalogue utilisé par le simulateur et les formulaires.
 - `POST /api/jobs` reçoit un `OptimizationRequest` défini dans `packages/shared/src/types.ts` et renvoie `{ id, token, status }`.
-- `GET /api/jobs/:id?token=...` récupère l’instantané persistant, y compris après une déconnexion.
-- `POST /api/jobs/:id/cancel`, avec `{ "token": "..." }`, demande l’arrêt d’une recherche.
+- `GET /api/jobs/:id`, avec `Authorization: Bearer <token>`, récupère l’instantané persistant, y compris après une déconnexion.
+- `POST /api/jobs/:id/cancel`, avec le même en-tête, demande l’arrêt d’une recherche. Le champ JSON `token` reste accepté pour les anciens clients ; les jetons dans les URL sont refusés.
 - Socket.IO utilise `/socket.io`. Envoyer `subscribe` avec `{ jobId, token }` puis écouter `job:update`. L’abonnement transmet immédiatement l’instantané courant. `unsubscribe` accepte `{ jobId }`.
 
 Le jeton est une capacité d’accès privée à la recherche. Redis ne conserve que son empreinte ; les messages publiés et les instantanés ne contiennent pas le jeton. Les états finaux sont `completed`, `cancelled` et `failed`. La progression et les résultats restent accessibles pendant au plus 24 heures à compter de la création du jeton. Les files terminées conservent au plus 500 entrées de chaque état ; la file de travaux en attente est limitée à 100.
 
 ## Recherche
+
+Les budgets Redis sont partagés entre instances : 20 tentatives de création par minute, 3 recherches simultanées et 1 800 secondes de calcul demandées par tranche de 10 minutes pour une même adresse cliente. Les adresses IPv6 d’un même /64 partagent ce budget. Seul le proxy configuré peut transmettre l’adresse réelle ; les en-têtes d’un client direct ne changent pas son quota. Les sockets sont limités à 10 par client et 200 au total, avec 30 ouvertures par minute et 60 événements d’abonnement par minute et par client. Un socket suit au plus 5 recherches et émet au plus 30 demandes par minute. Les origines autorisées sont définies par `ALLOWED_ORIGINS`.
 
 Le worker explore des remplacements d’une ou deux pièces, des changements de panoplie, la répartition automatique des points de base et plusieurs points de départ. Chaque candidat passe dans le même évaluateur que le navigateur. Seuls les candidats valides sont proposés ; des prix inconnus ne sont jamais assimilés à des prix nuls. Les emplacements Dofus peuvent rester libres.
 
@@ -59,12 +61,26 @@ Remove-Item Env:API_URL
 
 Les tests de la stack vérifient les requêtes invalides, l’accès HTTP sans jeton, l’isolation des abonnements WebSocket, la progression réelle du worker, les résultats publiés via Redis, la récupération HTTP, la reconnexion WebSocket et l’annulation. Ils vérifient aussi le parchotage, les exos globaux avec supplément explicite et plafonds de 0, 1 ou 2, la répartition automatique des points après un changement de niveau, ainsi que deux contraintes distinctes de dégâts et de chance de critique sur le même sort. Ils créent leurs recherches sans effacer les recherches existantes.
 
+## Contrôle des plafonds Redis
+
+Les limites concurrentes disposent aussi d'un contrôle utilisant le vrai Redis de la stack, avec un espace de clés aléatoire isolé et nettoyé à la fin. Depuis la racine sous Linux :
+
+```sh
+docker compose exec -T api node --input-type=module < apps/api/test/redis.security.mjs
+```
+
+Sous PowerShell, transmettre le fichier avec `Get-Content -Raw apps/api/test/redis.security.mjs | docker compose exec -T api node --input-type=module`. Ce contrôle vérifie les quotas partagés, le plafond global de file, les places par client et leur libération, ainsi que les limites de connexions par client et au total.
+
 ## Variables du service
 
 | Variable | Valeur usuelle |
 | --- | --- |
 | `ROLE` | `api` ou `worker` |
 | `REDIS_URL` | `redis://redis:6379` |
+| `REDIS_PASSWORD` | Mot de passe privé défini dans `.env` |
+| `TRUSTED_PROXY_ADDRESSES` | Adresse exacte du Traefik local |
+| `TRUSTED_PROXY_HOSTS` | Nom Docker du Traefik existant sur VPS |
+| `ALLOWED_ORIGINS` | Origines locales et les deux domaines publics |
 | `CATALOG_PATH` | `/app/data/catalog.json` |
 | `PORT` | `3000` |
 | `MAX_CANDIDATES` | `10000000` |

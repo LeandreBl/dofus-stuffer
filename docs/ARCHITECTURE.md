@@ -14,9 +14,9 @@
 | Nginx | Distribution du front compilé et des images locales |
 | Traefik | `/api` et `/socket.io` vers NestJS, le reste vers Nginx |
 
-Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. `sh scripts/start.sh` construit les services, attend leur démarrage et vérifie Redis ainsi qu’un worker.
+Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. Après configuration de `.env`, `docker compose up --build -d` construit et démarre les cinq services applicatifs.
 
-Compose expose uniquement Traefik sur `${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-8080}`. Pour un accès par l’IP du serveur Linux, définir `APP_BIND_ADDRESS=0.0.0.0` dans `.env`. Le fichier `.env` du poste de développement choisit le port 8180. Les autres services communiquent sur le réseau interne Docker. Traefik utilise une configuration fichier, sans accès au socket Docker. Le routage livré est HTTP ; la terminaison HTTPS pour un domaine doit être configurée lors du déploiement public.
+Le Compose principal réutilise le Traefik existant du VPS : routes HTTPS sur les domaines de `.env` et redirection HTTP, sans nouveau proxy ni port publié. Seuls Nginx et l'API rejoignent son réseau partagé ; Redis et le worker utilisent un réseau interne distinct. La maintenance dispose d'un réseau de sortie séparé pour les flux HTTPS. Redis exige le mot de passe de `.env`, transmis aux services qui l'utilisent. Les images, ports, origines, ressources et paramètres du proxy sont également dans `.env`. Les conteneurs ont des capacités supprimées et un système de fichiers en lecture seule. Le mode de développement facultatif sélectionne explicitement `compose.local.yaml` pour ajouter un proxy local ; il utilise actuellement le port 8180.
 
 ## Flux de recherche
 
@@ -89,8 +89,8 @@ L'évaluation retourne le détail `breakdown` : base, parchotage, équipement, c
 | `GET /api/maintenance` | Dernière vérification des sources et planification |
 | `GET /api/prices?server=…` | Dernier relevé automatique du serveur |
 | `POST /api/jobs` | Créer une recherche |
-| `GET /api/jobs/:id?token=…` | Lire un état autorisé |
-| `POST /api/jobs/:id/cancel` | Demander l'arrêt avec le jeton |
+| `GET /api/jobs/:id` | Lire un état avec `Authorization: Bearer <token>` |
+| `POST /api/jobs/:id/cancel` | Demander l'arrêt avec le même en-tête |
 | Socket.IO `/socket.io`, événement `subscribe` | Rejoindre une recherche avec `{ jobId, token }` |
 | Événement `job:update` | État, progression, résultats et éventuelle erreur |
 | Événement `unsubscribe` | Quitter l'abonnement |
@@ -99,6 +99,6 @@ Socket.IO ajoute son protocole et la reconnexion au transport WebSocket ; un cli
 
 ## Validation
 
-`npm run build` compile tous les composants. `npm test` exécute les tests du moteur, de validation, de sécurité et d'optimisation. Définir `API_URL` sur l'URL Traefik active le test réseau contre les services démarrés. Les contrôles de santé Compose et du lanceur vérifient la disponibilité, pas le parcours utilisateur complet.
+`npm run build` compile tous les composants. `npm test` exécute les tests du moteur, de validation, de sécurité et d'optimisation. Définir `API_URL` sur l'URL Traefik active les tests réseau contre les services démarrés. Les contrôles de santé Compose vérifient la disponibilité, pas le parcours utilisateur complet. Les plafonds atomiques, origines WebSocket et en-têtes du navigateur sont décrits dans le [rapport de sécurité](SECURITY_AUDIT.md).
 
 Les limites de simulation figurent dans [le plan](PLAN.md) et les [références de calcul](../data/CALCULATION_NOTES.md). Les prochaines extensions concernent les références vérifiées en jeu, effets spéciaux et rotations, puis les jets personnalisés, overmages et scénarios PvP.

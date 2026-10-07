@@ -7,6 +7,9 @@ data/runtime
 data/effects-map.json
 data/punitive-fixture.json
 .local
+.env
+.env.*
+!.env.example
 graphify-out
 legacy
 app

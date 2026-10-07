@@ -138,7 +138,7 @@ Les sources et limites détaillées sont dans `data/README.md`, `data/CALCULATIO
 
 ## Préparation du déploiement Linux
 
-Linux est désormais la cible principale. Les scripts `scripts/start.sh` et `scripts/stop.sh` ont passé `sh -n` dans un conteneur Linux sans accès réseau, avec le projet monté en lecture seule. Compose valide les configurations `APP_BIND_ADDRESS=127.0.0.1` et `APP_BIND_ADDRESS=0.0.0.0`. Le service API rapporte `process.platform=linux`, architecture `x64`, et son point de santé confirme Redis et un worker disponibles.
+Ce contrôle historique précédait l'audit de sécurité. Depuis le 8 octobre 2026, les scripts de lancement ont été retirés : `.env` contient les paramètres et le mot de passe Redis, puis `docker compose up --build -d` lance exactement cinq services sans Traefik supplémentaire. Le mode local de vérification ajoute explicitement `compose.local.yaml`. La stack reconstruite confirme Redis et un worker disponibles ; 119 tests partagés et 75 tests API passent, ainsi que le contrôle réseau d'accès, récupération, reconnexion et annulation. Les détails figurent dans le [rapport de sécurité](SECURITY_AUDIT.md).
 
 Le démarrage sur un hôte Linux natif distinct n'a pas été effectué : aucun serveur distant n'est raccordé à cette session. Les vérifications portent sur les scripts, la configuration et les services Linux conteneurisés locaux. Aucun port supplémentaire n'a été ouvert sur le poste actuel.
 
