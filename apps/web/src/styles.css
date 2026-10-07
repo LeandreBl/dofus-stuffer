@@ -1241,6 +1241,13 @@ select {
   padding-top: 18px;
   border-top: 1px solid #ffffff08;
 }
+.item-detail-actions {
+  flex-wrap: wrap;
+}
+.item-detail-actions > :first-child {
+  flex-basis: 100%;
+  justify-content: center;
+}
 .modal-wide {
   width: 750px;
 }

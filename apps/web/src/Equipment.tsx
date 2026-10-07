@@ -494,6 +494,7 @@ export function ItemDetail({
   slot?: Slot;
 }) {
   const equippedSlot = slot ? build.slots[slot] === item.id ? slot : undefined : (Object.keys(build.slots) as Slot[]).find((key) => build.slots[key] === item.id);
+  const excludedFromSearch = request.filters.excludedItemIds.includes(item.id);
   const priceKey = String(item.id);
   const selectedPrices = request.prices.values;
   const previewSlot = slot || equippedSlot || chooseSlot(item, build);
@@ -568,7 +569,27 @@ export function ItemDetail({
         delete values[priceKey];
         onChange({ ...request, prices: { ...request.prices, values, updatedAt: new Date().toISOString() } });
       }}>Reprendre le prix automatique · {fmt(request.prices.automaticValues[priceKey])} K</button>}
-      <div className="modal-actions">
+      {excludedFromSearch && <p className="inline-notice" role="status">Cet objet est exclu des prochaines recherches du moteur.</p>}
+      <div className="modal-actions item-detail-actions">
+        <button
+          type="button"
+          className="button ghost"
+          onClick={() => onChange({
+            ...request,
+            filters: {
+              ...request.filters,
+              excludedItemIds: excludedFromSearch
+                ? request.filters.excludedItemIds.filter((id) => id !== item.id)
+                : [...request.filters.excludedItemIds, item.id],
+              lockedSlots: excludedFromSearch ? request.filters.lockedSlots : Object.fromEntries(
+                Object.entries(request.filters.lockedSlots).filter(([, id]) => id !== item.id),
+              ),
+            },
+          })}
+        >
+          {excludedFromSearch ? <Plus size={14} /> : <CircleSlash size={14} />}
+          {excludedFromSearch ? "Retirer l’exclusion" : "Exclure du moteur"}
+        </button>
         {onRemove && (
           <button className="button ghost danger" onClick={onRemove}>
             Retirer
