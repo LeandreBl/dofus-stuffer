@@ -40,7 +40,7 @@ const schema = z.object({
       criticalHitBonus: z.number().int().min(-1_000).max(1_000), maxCastPerTurn: z.number().int().min(0).max(100),
     }).strict().refine(weapon => weapon.range >= weapon.minRange).optional(),
   }).passthrough()).min(1).max(100_000),
-  sets: z.array(z.object({ id, name: text, bonuses: z.array(z.object({ count: z.number().int().min(1).max(20), stats }).passthrough()).max(20) }).passthrough()).max(20_000),
+  sets: z.array(z.object({ id, name: text, itemIds: z.array(id).max(50), bonuses: z.array(z.object({ count: z.number().int().min(1).max(20), stats }).passthrough()).max(20) }).passthrough()).max(20_000),
   servers: z.array(z.string().min(1).max(100)).min(1).max(300), warnings: z.array(text).max(1000).optional(),
   combatSpells:z.array(z.object({id,name:text,description:text,classIds:z.array(id).max(100),icon:text.optional(),levels:z.array(z.object({id,grade:id,minPlayerLevel:id,apCost:number,minRange:number,range:number,rangeCanBeBoosted:z.boolean(),criticalHitProbability:z.number().min(0).max(100),maxCastPerTurn:number,maxCastPerTarget:number,minCastInterval:number,effects:z.array(effect).max(500),criticalEffects:z.array(effect).max(500)}).passthrough()).max(50)}).passthrough()).max(30_000).optional(),
   combatStates:z.array(z.object({id,name:text,effects:z.array(effect).max(500)}).strict()).max(20_000).optional(),

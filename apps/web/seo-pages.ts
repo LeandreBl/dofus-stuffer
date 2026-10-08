@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import type { Plugin } from "vite";
 import type { Catalog, GameClass, Spell } from "@dofus/shared";
-import { classSlug } from "./src/class-slug.ts";
+import { classSlug } from "./src/lib/class-slug.ts";
 
 // Static, crawlable text outside #root: React never replaces it, so it survives rendering.
 const SITE = "https://dofus-stuffer.notdotio.com";
@@ -18,7 +18,7 @@ const loadCatalog = (): Pick<Catalog, "classes" | "spells"> =>
 
 const classLinks = (classes: GameClass[]) =>
   `<ul class="seo-classes">${classes
-    .map((gameClass) => `<li><a href="/classe/${classSlug(gameClass.name)}/">Stuff ${escape(gameClass.name)}</a></li>`)
+    .map((gameClass) => `<li><a href="/class/${classSlug(gameClass.name)}/">Stuff ${escape(gameClass.name)}</a></li>`)
     .join("")}</ul>`;
 
 const homeSection = (classes: GameClass[]) => `<section class="seo-content">
@@ -62,13 +62,13 @@ export function seoPages(): Plugin {
       const home = String(index.source);
       const urls = [`${SITE}/`];
       for (const gameClass of classes) {
-        const url = `${SITE}/classe/${classSlug(gameClass.name)}/`;
+        const url = `${SITE}/class/${classSlug(gameClass.name)}/`;
         const classSpells = spells.filter((spell) => spell.classIds.includes(gameClass.id));
         let html = replaceRequired(home, homeSection(classes), classSection(gameClass, classSpells, classes));
         html = replaceRequired(html, HOME_TITLE, `Stuff ${escape(gameClass.name)} Dofus · Optimiseur et dégâts | Dofus Stuffer`);
         html = replaceRequired(html, HOME_DESCRIPTION, `Optimise ton stuff ${escape(gameClass.name)} sur Dofus : objectifs PA, PM et caractéristiques, comparaison d’équipements et simulation des dégâts des ${classSpells.length} sorts ${escape(gameClass.name)}.`);
         html = replaceRequired(html, `"${SITE}/"`, `"${url}"`);
-        this.emitFile({ type: "asset", fileName: `classe/${classSlug(gameClass.name)}/index.html`, source: html });
+        this.emitFile({ type: "asset", fileName: `class/${classSlug(gameClass.name)}/index.html`, source: html });
         urls.push(url);
       }
       this.emitFile({

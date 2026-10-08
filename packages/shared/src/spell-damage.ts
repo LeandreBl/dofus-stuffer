@@ -111,6 +111,13 @@ export function hasStatScalingSpellDamage(spell: Spell, characterLevel=200, cata
  * the user chooses another count; invocation attacks are never all added together.
  * Masks, effect order, ranks and zone falloff are retained from the native client.
  */
+/** Base-damage bonus at `turn` when the spell is recast every `step` turns; maxStack>0 keeps only the newest casts' buffs. */
+export function recastBonus(charges:RawEffect[],turn:number,step:number,maxStack=0){
+  const active:{cast:number;value:number}[]=[];
+  for(let cast=0;cast<turn;cast+=step)for(const e of charges){const start=cast+(e.delay??0);if(turn>=start&&turn<start+Math.max(1,e.duration??1))active.push({cast,value:e.value});}
+  active.sort((a,b)=>b.cast-a.cast);
+  return (maxStack>0?active.slice(0,maxStack):active).reduce((sum,entry)=>sum+entry.value,0);
+}
 export function calculateNativeSpellDamage(spell:Spell, input:Stats, target:CombatTarget, characterLevel:number, context:SpellCalculationContext={}):SpellDamage {
   const level=getSpellLevel(spell,characterLevel), scenario=context.scenario ?? {}, index=graph(context.catalog);
   const warnings=new Set(spell.dataWarnings ?? []), parameters=new Set<string>(), options=new Map<string,NonNullable<SpellDamage['scenarioOptions']>[number]>(), attacks=new Map<number,NonNullable<SpellDamage['summonAttacks']>[number]>(), randomOptions=new Map<string,NonNullable<SpellDamage['randomOptions']>[number]>();
@@ -167,7 +174,7 @@ export function calculateNativeSpellDamage(spell:Spell, input:Stats, target:Comb
     return allowed;
   }
   const casterHp=()=>Math.floor(Math.max(0,finite(input.hitPoints,1050))*Math.max(0,Math.min(100,finite(scenario.casterHpPercent,100)))/100);
-  let effectiveDistance=Math.max(0,finite(scenario.zoneDistance)),nearestActiveZone=Infinity;
+  let effectiveDistance=Math.max(0,finite(scenario.zoneDistance)),nearestActiveZone=Infinity,pushDistance=0;
   const rootHasEnemyCast=level.effects.some(e=>!e.clientOnly&&!e.targetMask?.includes('F50000')&&e.targetMask?.split(',').some(t=>['A','H','M','I','J','D','L'].includes(t))&&(references.has(e.effectId)||Boolean(SPELL_DAMAGE_ELEMENTS[e.effectId])));
   const zoneContains=(e:RawEffect)=>{
     const zone=e.zone;if(!zone)return true;
@@ -282,7 +289,7 @@ export function calculateNativeSpellDamage(spell:Spell, input:Stats, target:Comb
           lines.push({element:damageElement,baseMin:e.diceNum||e.value,baseMax:e.diceSide||e.diceNum||e.value,normal:{min:result.min*count,average:result.average*count,max:result.max*count},critical:null,delay,label:clean(s.name),trigger:periodic||undefined,duration:e.triggerDuration||e.duration,sourceSpellId:s.id,kind:'elemental'});continue;
         }
         if(e.effectId===5||e.effectId===1041||e.effectId===783){
-          if(!active || e.effectId===1041)continue;parameters.add('blockedPushCells');parameters.add('pushResistance');
+          if(!active || e.effectId===1041)continue;parameters.add('blockedPushCells');parameters.add('pushResistance');pushDistance=Math.max(pushDistance,e.diceNum||63);
           const cells=Math.max(0,Math.min(e.diceNum||63,finite(scenario.blockedPushCells))), value=Math.max(0,Math.floor((characterLevel/2+32+finite(stats.pushDamageBonus)-finite(scenario.pushResistance))*cells/4));
           if(cells)lines.push({element:'neutral',baseMin:cells,baseMax:cells,normal:{min:value,average:value,max:value},critical:null,delay,label:'Poussée',sourceSpellId:s.id,kind:'push'});continue;
         }
@@ -312,13 +319,15 @@ export function calculateNativeSpellDamage(spell:Spell, input:Stats, target:Comb
   const lines=normalLines.map((line,i)=>({...line,critical:criticalLines[i]?.normal ?? null}));
   for(let i=normalLines.length;i<criticalLines.length;i++)lines.push({...criticalLines[i],normal:zero(),critical:criticalLines[i].normal});
   const charges=level.effects.filter(e=>e.effectId===293&&e.diceNum===spell.id&&(e.delay??0)>0);
-  const horizon=Math.min(12,Math.max(3,level.minCastInterval+1,...charges.map(e=>(e.delay??0)+Math.max(1,e.duration??1))));
+  // Recast at every available turn: each earlier cast adds its own delayed base-damage charges.
+  const step=Math.max(1,level.minCastInterval);
+  const horizon=Math.min(12,Math.max(3,step+1,...charges.map(e=>(e.delay??0)+Math.max(1,e.duration??1)+step)));
   const turns=Array.from({length:horizon+1},(_,turn)=>{
-    const bonus=turn?charges.filter(e=>turn>=(e.delay??0)&&turn<(e.delay??0)+Math.max(1,e.duration??1)).reduce((a,b)=>a+b.value,0):0;
-    return {turn,bonus,normal:bonus?sum(branch(false,bonus).map(l=>l.normal)):normal,critical:critical&&bonus?sum(branch(true,bonus).map(l=>l.normal)):critical,available:turn===0||turn>=Math.max(1,level.minCastInterval)};
+    const bonus=recastBonus(charges,turn,step,level.maxStack);
+    return {turn,bonus,normal:bonus?sum(branch(false,bonus).map(l=>l.normal)):normal,critical:critical&&bonus?sum(branch(true,bonus).map(l=>l.normal)):critical,available:turn%step===0};
   });
-  if(charges.length)warnings.add('Relances après un lancement initial, sans lancer intermédiaire.');
+  if(charges.length)warnings.add('Relances à chaque tour disponible : les bonus des lancers précédents se cumulent.');
   if(hasIndirect)warnings.add('Dégâts pour le nombre de déclenchements choisi, sur une cible.');
   const critChance=calculateSpellCriticalChance(spell,input,characterLevel)??0,expected=normal.average*(1-critChance/100)+(critical?.average??normal.average)*critChance/100;
-  return {spellId:spell.id,levelId:level.id,apCost:level.apCost,critChance,normal,critical,expected,perAp:level.apCost?expected/level.apCost:0,lines,turns,supported,warnings:[...warnings],scenarioOptions:[...options.values()],parameters:[...parameters],summonAttacks:[...attacks.values()],castSources:[...castSources.values()],zoneDistance:effectiveDistance,randomOptions:[...randomOptions.values()],damageKind:hasSummon?'summon':hasIndirect?'triggered':lines.length?'direct':'support'};
+  return {spellId:spell.id,levelId:level.id,apCost:level.apCost,critChance,normal,critical,expected,perAp:level.apCost?expected/level.apCost:0,lines,turns,supported,warnings:[...warnings],scenarioOptions:[...options.values()],parameters:[...parameters],summonAttacks:[...attacks.values()],castSources:[...castSources.values()],zoneDistance:effectiveDistance,pushDistance:pushDistance||undefined,randomOptions:[...randomOptions.values()],damageKind:hasSummon?'summon':hasIndirect?'triggered':lines.length?'direct':'support'};
 }

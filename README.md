@@ -57,7 +57,7 @@ Le fichier `compose.local.yaml` ajoute un proxy HTTP local uniquement lorsqu'il 
 docker compose -f compose.yaml -f compose.local.yaml up --build -d
 ```
 
-Ce mode est indépendant du Traefik du VPS. Il expose l'interface sur `http://localhost:APP_PORT` ; le poste de développement utilise actuellement le port 8180. Pour arrêter ce mode, utiliser les mêmes deux fichiers avec `down`.
+Pour que `docker compose` et `npm start` l'utilisent par défaut, ajouter `COMPOSE_FILE=compose.yaml:compose.local.yaml` dans le `.env` local. Dans ce mode, `web` est un serveur Vite avec rechargement à chaud (sources montées depuis le dépôt) au lieu de nginx. Ce mode est indépendant du Traefik du VPS. Il expose l'interface sur `http://localhost:APP_PORT` ; le poste de développement utilise actuellement le port 8180. Pour arrêter ce mode, utiliser les mêmes deux fichiers avec `down`.
 
 ## Utilisation
 

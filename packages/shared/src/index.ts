@@ -10,7 +10,7 @@ import { calculateEquipmentMaluses } from './equipment-maluses.js';
 import { getCharacterAllocation } from './character.js';
 import { calculateWeaponCriticalChance, calculateWeaponDamage } from './weapon-damage.js';
 import { formatItemCondition } from './equipment-diagnostics.js';
-import { calculateNativeSpellDamage, type SpellCalculationContext } from './spell-damage.js';
+import { calculateNativeSpellDamage, recastBonus, type SpellCalculationContext } from './spell-damage.js';
 export * from './spell-damage.js';
 import type { Build, BuildEvaluation, Catalog, Character, CombatTarget, Constraint, DamageRange, Element, EquipmentItem, ItemCondition, OptimizationRequest, RawEffect, Slot, SlotType, Spell, SpellDamage, SpellLevel, Stats, WeaponDamage } from './types.js';
 
@@ -58,7 +58,7 @@ nonDamageEffects.add(1159);
 
 /** Pure function: the same per-line arithmetic is used by React and the worker.
  * Scope: immediate elemental damage/life steal, fixed target, no external buffs.
- * The recast table is ONE later cast after an initial cast, not a whole rotation.
+ * The recast table assumes a cast at every available turn; earlier casts' charges stack.
  */
 export function calculateSpellDamage(spell: Spell, stats: Stats, target: CombatTarget = defaultTarget(), characterLevel = 200, context: SpellCalculationContext = {}): SpellDamage {
   const level = getSpellLevel(spell, characterLevel);
@@ -84,7 +84,7 @@ function calculateLegacySpellDamage(spell: Spell, stats: Stats, target: CombatTa
       // Punitive's invisible 3793 effects reset its scheduled script. Its visible
       // 293 bonuses suffice only for the explicitly isolated-recast scenario.
       if (effect.effectId === 3793 && chargeEffects.length && (effect.delay ?? 0) > 0) {
-        warnings.add('Relances projetées après un lancement initial, sans lancer intermédiaire ni buff externe.');
+        warnings.add('Relances à chaque tour disponible : les bonus des lancers précédents se cumulent.');
       } else {
         unsupported = true;
         warnings.add('Ce sort comporte des mécaniques non simulées (états, invocations, sous-sorts ou effets spéciaux).');
@@ -121,12 +121,13 @@ function calculateLegacySpellDamage(spell: Spell, stats: Stats, target: CombatTa
   const critical = level.criticalHitProbability > 0 && criticals.length ? totals(criticals, true) : null;
   const critChance = calculateSpellCriticalChance(spell, stats, characterLevel) ?? 0;
   const expected = normal.average * (1 - critChance / 100) + (critical?.average ?? normal.average) * critChance / 100;
-  const horizon = Math.min(12, Math.max(3, level.minCastInterval + 1, ...chargeEffects.map(effect => (effect.delay ?? 0) + Math.max(1, effect.duration ?? 1))));
+  const step = Math.max(1, level.minCastInterval);
+  const horizon = Math.min(12, Math.max(3, step + 1, ...chargeEffects.map(effect => (effect.delay ?? 0) + Math.max(1, effect.duration ?? 1) + step)));
   const turns = Array.from({ length: horizon + 1 }, (_, turn) => {
-    const bonus = turn === 0 ? 0 : chargeEffects.filter(effect => turn >= (effect.delay ?? 0) && turn < (effect.delay ?? 0) + Math.max(1, effect.duration ?? 1)).reduce((sum, effect) => sum + effect.value, 0);
-    return { turn, bonus, normal: totals(normals, false, bonus), critical: critical ? totals(criticals, true, bonus) : null, available: turn === 0 || turn >= Math.max(1, level.minCastInterval) };
+    const bonus = recastBonus(chargeEffects, turn, step, level.maxStack);
+    return { turn, bonus, normal: totals(normals, false, bonus), critical: critical ? totals(criticals, true, bonus) : null, available: turn % step === 0 };
   });
-  if (chargeEffects.length) warnings.add('Relances projetées après un lancement initial, sans lancer intermédiaire ni buff externe.');
+  if (chargeEffects.length) warnings.add('Relances à chaque tour disponible : les bonus des lancers précédents se cumulent.');
   return { spellId: spell.id, levelId: level.id, apCost: level.apCost, critChance, normal, critical, expected, perAp: level.apCost ? expected / level.apCost : 0, lines: normals.map((effect, index) => ({ element: damageElements[effect.effectId], baseMin: effect.diceNum || effect.value, baseMax: effect.diceSide || effect.diceNum || effect.value, normal: effectRange(effect, false), critical: criticals[index] ? effectRange(criticals[index], true) : null, delay: effect.delay ?? 0 })), turns, supported: !unsupported, warnings: [...warnings] };
 }
 

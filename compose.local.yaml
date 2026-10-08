@@ -38,9 +38,37 @@ services:
       TRUSTED_PROXY_HOSTS: traefik
     labels:
       traefik.enable: "false"
+  # Vite en mode dev (HMR) à la place de nginx ; les node_modules Linux/musl vivent dans des volumes.
   web:
+    image: ${NODE_IMAGE:?}
+    build: !reset null
+    user: "0:0"
+    read_only: false
+    working_dir: /app
+    environment:
+      npm_config_cache: /root/.npm
+    command:
+      - sh
+      - -c
+      - >-
+        { cmp -s package-lock.json node_modules/.ci-lock || { npm ci --ignore-scripts --no-audit --no-fund && cp package-lock.json node_modules/.ci-lock; }; } &&
+        npm run build -w @dofus/shared &&
+        { npx tsc -p packages/shared -w --preserveWatchOutput & } &&
+        exec npm run dev -w @dofus/web -- --port 80 --strictPort
+    volumes:
+      - .:/app:ro
+      - web-node-modules:/app/node_modules
+      - web-app-node-modules:/app/apps/web/node_modules
+      - web-api-node-modules:/app/apps/api/node_modules
+      - web-shared-dist:/app/packages/shared/dist
+    mem_limit: 1g
     labels:
       traefik.enable: "false"
+volumes:
+  web-node-modules:
+  web-app-node-modules:
+  web-api-node-modules:
+  web-shared-dist:
 networks:
   existing-proxy:
     external: false

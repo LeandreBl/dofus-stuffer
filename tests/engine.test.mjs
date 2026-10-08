@@ -106,7 +106,7 @@ test('critical-chance priorities can share a rank and remain independent from da
   assert.ok(Math.abs(evaluateBuild(data, input, { slots: {} }).score - 200 / 3) < 1e-9);
 });
 
-test('Punitive uses the actual imported level and scheduled base boosts without invented intermediate casts', () => {
+test('Punitive uses the actual imported level and recasts every turn within its stack limit', () => {
   const punitive = catalog.spells.find(spell => spell.id === 32456);
   assert.ok(punitive);
   const damage = calculateSpellDamage(punitive, {}, defaultTarget(), 200);
@@ -114,9 +114,15 @@ test('Punitive uses the actual imported level and scheduled base boosts without 
   assert.deepEqual([damage.critical.min, damage.critical.max], [36, 41]);
   assert.equal(damage.turns.find(turn => turn.turn === 1).bonus, 24);
   assert.equal(damage.turns.find(turn => turn.turn === 1).normal.min, 54);
-  assert.equal(damage.turns.find(turn => turn.turn === 2).normal.min, 62);
-  assert.equal(damage.turns.find(turn => turn.turn === 3).normal.min, 30);
+  assert.equal(damage.turns.find(turn => turn.turn === 2).normal.min, 54); // maxStack 1: T1's +24 replaces T0's +32
+  assert.equal(damage.turns.find(turn => turn.turn === 3).normal.min, 54);
   assert.equal(calculateSpellDamage(punitive, {}, defaultTarget(), 69).supported, false);
+});
+
+test('Expiation stacks the delayed bonuses of every earlier recast', () => {
+  const expiation = catalog.spells.find(spell => spell.id === 32438);
+  const turns = calculateSpellDamage(expiation, {}, defaultTarget(), 200).turns;
+  assert.deepEqual(turns.filter(turn => turn.available).map(turn => turn.bonus), [0, 36, 72, 72]);
 });
 
 test('conditional or unimplemented damage cannot satisfy a strict spell constraint', () => {

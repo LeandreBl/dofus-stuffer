@@ -88,6 +88,8 @@ test('HP relative damage ignores elemental characteristics and power, and push d
   const push=fixture([effect(5,3)]);
   assert.equal(calculate(push,{pushDamageBonus:100},{blockedPushCells:2,pushResistance:20}).normal.min,106);
   assert.equal(calculate(push,{pushDamageBonus:100},{blockedPushCells:0}).normal.min,0);
+  assert.equal(calculate(push).pushDistance,3);
+  assert.equal(calculate(push,{pushDamageBonus:100},{blockedPushCells:9}).normal.min,calculate(push,{pushDamageBonus:100},{blockedPushCells:3}).normal.min);
   assert.equal(calculate(fixture([effect(1067,20)]),stats,{targetHp:4000}).normal.min,800);
   assert.equal(calculate(fixture([effect(1063,100)]),stats).normal.min,100);
   assert.equal(calculate(fixture([effect(82,100)]),stats).normal.min,100);

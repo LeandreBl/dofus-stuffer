@@ -213,7 +213,9 @@ const classes = await pooled(breeds, async b => {
   // Public sprite URLs are documented by DofusLab's update_class_list.py and getImageUrl.
   const sprite=await asset(`https://d2iuiayak06k8j.cloudfront.net/class/sprite/${b.shortName.en}_M.png`,`classes/portrait-${b.id}.png`);
   const illustration=sprite.startsWith('/game/')?sprite:symbol;
-  const icon=await asset(b.heads?.male ?? b.img,`classes/${b.id}.png`);
+  let icon=await asset(b.heads?.male ?? b.img,`classes/${b.id}.png`);
+  // api.dofusdb.fr lacks recent heads (Forgelance); the beta host serves them.
+  if(!icon.startsWith('/game/')&&b.heads?.male) icon=await asset(b.heads.male.replace('//api.','//api.beta.'),`classes/${b.id}.png`);
   return {id:b.id,name:fr(b.shortName),icon:icon.startsWith('/game/')?icon:symbol,illustration};
 });
 const spellIcons = new Map();
@@ -294,8 +296,12 @@ for(const item of items) item.icon=itemIconMap.get(item.icon);
 const sets = setsRaw.map(s => ({id:s.id,name:fr(s.name),itemIds:items.filter(i=>i.setId===s.id).map(i=>i.id),bonuses:(s.effects ?? []).map((e,index)=>({count:index+1,stats:statsFrom(e)})).filter(b=>Object.keys(b.stats).length)})).filter(s=>s.itemIds.length);
 const categoryNames = {1:'Autres',2:'Essentielles',3:'Utilitaires',4:'Dommages',5:'Résistances',6:'Combat'};
 const spriteY={tx_lifePoints:917,tx_actionPoints:243,tx_movementPoints:50,tx_strength:430,tx_vitality:317,tx_wisdom:356,tx_chance:87,tx_agility:165,tx_intelligence:392,tx_damage:1154,tx_crit:587,tx_range:126,tx_damagesPercent:1106,tx_summonableCreaturesBoost:505,tx_dodgeAP:1062,tx_dodgeMP:1014,tx_initiative:203,tx_prospecting:277,tx_heal:964,tx_strengthRes:430,tx_intelligenceRes:392,tx_chanceRes:87,tx_agilityRes:165,tx_neutral:13,tx_neutralRes:13,tx_trapPercent:670,tx_trap:710,tx_escape:467,tx_tackle:543,tx_attackAP:1338,tx_attackMP:1338,tx_push:870,tx_pushReduction:830,tx_criticalDamage:1246,tx_criticalReduction:1198};
+// Characteristics missing from the legacy sprite, taken from dofusdb.fr's icon set.
+const statIconPaths={weaponDamagePercent:'characteristics/tx_weaponDamage',dealtDamageMultiplierWeapon:'characteristics/tx_weaponDamage',reflectDamage:'characteristics/tx_return',dealtDamageMultiplierSpells:'characteristics/tx_spellDamage',dealtDamageMultiplierDistance:'characteristics/tx_distanceDamage',dealtDamageMultiplierMelee:'characteristics/tx_meleeDamage',curPermanentDamage:'effects/erosion',permanentDamagePercent:'effects/erosion'};
+const statIcons=new Map();
+await pooled(Object.entries(statIconPaths), async ([key,path])=>{const icon=await asset(`https://dofusdb.fr/icons/${path}.png`,`stats/${path.split('/')[1]}.png`);if(icon.startsWith('/game/'))statIcons.set(key,icon);}, 4);
 const defaults={actionPoints:12,movementPoints:6,range:6,criticalHit:50,vitality:3500,hitPoints:4000,strength:1000,intelligence:1000,chance:1000,agility:1000,wisdom:300,damagePercent:200,maxSummonedCreaturesBoost:3};
-const statDefinitions = characteristics.filter(c=>c.id>=0 && fr(c.name)).map(c=>({key:c.keyword,id:c.id,name:((c.categoryId===4&&!/dommage|puissance|maitrise|érosion|renvoi/i.test(fr(c.name)))?'Dommages ':c.categoryId===5?'Résistance ':'')+fr(c.name),category:categoryNames[c.categoryId] ?? 'Autres',iconSpriteY:spriteY[c.asset],unit:c.keyword==='damagePercent'?'':/Percent|Multiplier|criticalHit/.test(c.keyword)?'%':'',defaultTarget:defaults[c.keyword]??(/Percent|Multiplier/.test(c.keyword)?20:50)}));
+const statDefinitions = characteristics.filter(c=>c.id>=0 && fr(c.name)).map(c=>({key:c.keyword,id:c.id,name:((c.categoryId===4&&!/dommage|puissance|maitrise|érosion|renvoi/i.test(fr(c.name)))?'Dommages ':c.categoryId===5?'Résistance ':'')+fr(c.name),category:categoryNames[c.categoryId] ?? 'Autres',icon:statIcons.get(c.keyword),iconSpriteY:spriteY[c.asset],unit:c.keyword==='damagePercent'?'':/Percent|Multiplier|criticalHit/.test(c.keyword)?'%':'',defaultTarget:defaults[c.keyword]??(/Percent|Multiplier/.test(c.keyword)?20:50)}));
 const serversRaw=await list('servers');
 const fetchedAt = new Date().toISOString();
 const source = localClient ? localClient.source : API;

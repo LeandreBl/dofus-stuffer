@@ -108,6 +108,7 @@ export interface EquipmentItem {
 export interface EquipmentSet {
   id: number;
   name: string;
+  itemIds: number[];
   bonuses: { count: number; stats: Stats }[];
 }
 export interface Catalog {
@@ -268,6 +269,8 @@ export interface SpellDamage {
   summonAttacks?: { id: number; name: string; summon: string }[];
   castSources?: { id: number; name: string }[];
   zoneDistance?: number;
+  /** Longest push of the active effects: blocked push cells cannot exceed it. */
+  pushDistance?: number;
   damageKind?: 'direct' | 'triggered' | 'summon' | 'support';
   randomOptions?: { key: string; label: string; choices: {id:number;label:string}[]; draws:number }[];
 }

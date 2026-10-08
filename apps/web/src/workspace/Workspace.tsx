@@ -1,0 +1,340 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  evaluateBuild,
+  getCharacterAllocation,
+  type Build,
+  type Catalog,
+  type EquipmentItem,
+  type PriceBook,
+  type Slot,
+} from "@dofus/shared";
+import { ConstraintEditor } from "../constraints/ConstraintEditor";
+import { ItemDetail } from "../items/ItemDetail";
+import { chooseSlot } from "../items/slots";
+import { manualBuildRequest } from "../lib/build-preview";
+import { downloadJson, pickFile } from "../lib/files";
+import { urlParam } from "../lib/url";
+import { BuilderTab } from "../tabs/builder/BuilderTab";
+import { EquipmentTab } from "../tabs/equipment/EquipmentTab";
+import { ItemsTab } from "../tabs/items/ItemsTab";
+import { MarketTab } from "../tabs/market/MarketTab";
+import { SpellsTab } from "../tabs/spells/SpellsTab";
+import { AppFooter } from "./AppFooter";
+import { AppHeader } from "./AppHeader";
+import { HelpModal } from "./HelpModal";
+import { ItemBrowserModal } from "./ItemBrowserModal";
+import { LaunchButton } from "./LaunchButton";
+import { PageHeading } from "./PageHeading";
+import { parseProfile, parseStuff } from "./profile-transfer";
+import { initialState, saveWorkspace, STORAGE_KEY } from "./storage";
+import { tabTitles } from "./tabs";
+import { Toast } from "./Toast";
+import { useCriterionEditor } from "./useCriterionEditor";
+import { useMaintenance } from "./useMaintenance";
+import { useNavigation } from "./useNavigation";
+import { useOptimization } from "./useOptimization";
+import { usePriceSync } from "./usePriceSync";
+import { useToast } from "./useToast";
+import { WorkspaceNotices } from "./WorkspaceNotices";
+
+export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; onProfileImported: () => void }) {
+  const [initial] = useState(() => initialState(catalog));
+  const [request, setRequest] = useState(initial.request);
+  const [build, setBuild] = useState<Build>(initial.build);
+  const [catalogUpdated, setCatalogUpdated] = useState(initial.catalogUpdated);
+  const [exosUpdated, setExosUpdated] = useState(initial.exosUpdated);
+  const [priceBooks, setPriceBooks] = useState<Record<string, PriceBook>>(initial.priceBooks);
+  const [saved, setSaved] = useState(true);
+  const [error, setError] = useState("");
+  const [help, setHelp] = useState(false);
+  const [browser, setBrowser] = useState<{ slot?: Slot } | null>(null);
+  const [itemSlot, setItemSlot] = useState<Slot | undefined>();
+  // Bumped key remounts the catalog on the requested set.
+  const [setLink, setSetLink] = useState<{ id: number; key: number }>();
+  const { tab, setTab, item, setItem } = useNavigation(catalog);
+  const [toast, notify] = useToast();
+  const priceSync = usePriceSync(request.prices.server, catalog.items, setRequest);
+  const maintenance = useMaintenance();
+  const criteria = useCriterionEditor(request, setRequest, notify);
+  const optimization = useOptimization({ catalog, initialReceipt: initial.receipt, setBuild, setCatalogUpdated });
+  const { receipt, active } = optimization;
+  const evaluation = useMemo(
+    () => evaluateBuild(catalog, manualBuildRequest(request), build),
+    [catalog, request, build],
+  );
+  const characterAllocation = getCharacterAllocation({ ...request.character, baseStats: request.character.allocationMode === "manual" ? request.character.baseStats : {} });
+  const weapon = catalog.items.find((entry) => entry.id === build.slots.weapon);
+  const equippedItemSlot = !item ? undefined : itemSlot
+    ? (build.slots[itemSlot] === item.id ? itemSlot : undefined)
+    : (Object.keys(build.slots) as Slot[]).find((slot) => build.slots[slot] === item.id);
+  const closeBrowser = useCallback(() => setBrowser(null), []);
+  const closeItem = useCallback(() => setItem(null), [setItem]);
+  const closeHelp = useCallback(() => setHelp(false), []);
+
+  useEffect(() => {
+    setSaved(saveWorkspace(catalog, { request, build, priceBooks, receipt }));
+  }, [request, build, priceBooks, receipt, catalog]);
+
+  function changeServer(server: string) {
+    setPriceBooks((previous) => ({ ...previous, [request.prices.server]: request.prices }));
+    setRequest((previous) => ({
+      ...previous,
+      prices: priceBooks[server] || { server, values: {}, ownedItemIds: [], mode: "total" },
+    }));
+  }
+  function equip(selected: EquipmentItem, requestedSlot?: Slot) {
+    const slot = requestedSlot || chooseSlot(selected, build);
+    const elsewhere = Object.entries(build.slots).some(([otherSlot, id]) => otherSlot !== slot && id === selected.id);
+    if (selected.slotType === "ring" && selected.setId && elsewhere) {
+      notify("Cet anneau de panoplie est déjà équipé. Choisis un autre anneau.");
+      return;
+    }
+    if (selected.slotType === "dofus" && elsewhere) {
+      notify("Ce Dofus ou trophée est déjà équipé.");
+      return;
+    }
+    setBuild((previous) => ({ ...previous, slots: { ...previous.slots, [slot]: selected.id } }));
+    setRequest((previous) => {
+      const lockedSlots = { ...previous.filters.lockedSlots };
+      if (lockedSlots[slot] && lockedSlots[slot] !== selected.id) delete lockedSlots[slot];
+      return { ...previous, filters: { ...previous.filters, lockedSlots } };
+    });
+    setBrowser(null);
+    notify(`${selected.name} équipé.`);
+  }
+  function unequip(slot: Slot) {
+    setBuild((previous) => {
+      const slots = { ...previous.slots };
+      delete slots[slot];
+      return { ...previous, slots };
+    });
+    setRequest((previous) => ({
+      ...previous,
+      filters: {
+        ...previous.filters,
+        lockedSlots: Object.fromEntries(Object.entries(previous.filters.lockedSlots).filter(([locked]) => locked !== slot)),
+      },
+    }));
+    setItem(null);
+    notify("Objet retiré du stuff.");
+  }
+  async function optimize() {
+    if (optimization.starting || active) return;
+    if (!characterAllocation.valid) {
+      setError(characterAllocation.violations.join(" "));
+      setTab("builder");
+      return;
+    }
+    setError("");
+    try {
+      await optimization.start({ ...request, catalogRevision: catalog.revision, initialBuild: { ...build, baseStats: request.character.allocationMode === "automatic" ? build.baseStats : undefined, exoBonuses: (build.exoBonuses || []).filter((exo) => request.filters.allowedExos?.includes(exo)).slice(0, request.filters.maxExos ?? 2) } });
+      setTab("equipment");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Impossible de démarrer la recherche.");
+    }
+  }
+  async function cancel() {
+    if (!receipt) return;
+    try {
+      await optimization.cancel();
+      notify("Arrêt demandé. Les meilleurs résultats seront conservés.");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Impossible d’arrêter la recherche.");
+    }
+  }
+  async function profileImport() {
+    const file = await pickFile();
+    if (!file) return;
+    try {
+      const restored = parseProfile(catalog, await file.text(), initial);
+      if (!window.confirm("Remplacer ton profil actuel (priorités, stuff et prix) par celui du fichier ?")) return;
+      // Saved first, then the workspace remounts from it like on a page load.
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...restored, receipt: null }));
+      onProfileImported();
+    } catch {
+      setError("Ce fichier n’est pas un profil Dofus Stuffer valide.");
+    }
+  }
+  async function stuffImport() {
+    const file = await pickFile();
+    if (!file) return;
+    try {
+      const imported = parseStuff(catalog, await file.text(), request.character);
+      if (Object.keys(build.slots).length && !window.confirm("Remplacer ton stuff actuel par celui du fichier ?")) return;
+      setBuild(imported.build);
+      setTab("equipment");
+      notify(imported.ignored ? `Stuff importé. ${imported.ignored} objet(s) absent(s) de ce catalogue ignoré(s).` : "Stuff importé.");
+    } catch {
+      setError("Ce fichier ne contient pas de stuff Dofus Stuffer valide.");
+    }
+  }
+  const profileExport = () =>
+    downloadJson("dofus-stuffer-profil.json", {
+      version: 4,
+      catalogVersion: catalog.version,
+      catalogRevision: catalog.revision,
+      request,
+      build,
+      priceBooks: { ...priceBooks, [request.prices.server]: request.prices },
+    });
+
+  return (
+    <>
+      <AppHeader tab={tab} onTab={setTab} />
+      <main className="workspace">
+        <PageHeading title={tabTitles[tab]} onExport={profileExport} onImport={() => void profileImport()} onHelp={() => setHelp(true)} />
+        <WorkspaceNotices
+          catalog={catalog}
+          error={error}
+          catalogUpdated={catalogUpdated}
+          exosUpdated={exosUpdated}
+          onCloseError={() => setError("")}
+          onCloseCatalog={() => setCatalogUpdated(false)}
+          onCloseExos={() => setExosUpdated(false)}
+        />
+        {tab === "builder" && (
+          <BuilderTab
+            catalog={catalog}
+            request={request}
+            build={build}
+            evaluation={evaluation}
+            saved={saved}
+            searching={active}
+            onChange={setRequest}
+            onServer={changeServer}
+            onAdd={criteria.add}
+            onEdit={criteria.edit}
+            onBrowse={() => setBrowser({})}
+            onFollow={() => setTab("equipment")}
+          />
+        )}
+        {tab === "equipment" && (
+          <EquipmentTab
+            catalog={catalog}
+            request={request}
+            build={build}
+            evaluation={evaluation}
+            job={optimization.job}
+            searching={active}
+            starting={optimization.starting}
+            connected={optimization.connected}
+            selectedResult={optimization.selectedResult}
+            setRequest={setRequest}
+            setBuild={setBuild}
+            notify={notify}
+            onSelectResult={optimization.setSelectedResult}
+            onCancel={() => void cancel()}
+            onRestart={() => void optimize()}
+            onSlot={(slot, selected) => {
+              setItemSlot(slot);
+              if (selected) setItem(selected);
+              else setBrowser({ slot });
+            }}
+            onBrowse={() => setBrowser({})}
+            onImport={() => void stuffImport()}
+            onBuilder={() => setTab("builder")}
+            onSpells={() => setTab("spells")}
+            onPrices={() => setTab("market")}
+          />
+        )}
+        {tab === "spells" && (
+          <SpellsTab
+            catalog={catalog}
+            request={request}
+            evaluation={evaluation}
+            onChange={setRequest}
+            onAdd={criteria.add}
+            onWeapon={() => setBrowser({ slot: "weapon" })}
+            initialSpellId={urlParam("spell")}
+          />
+        )}
+        {tab === "items" && (
+          <ItemsTab
+            setLink={setLink}
+            catalog={catalog}
+            request={request}
+            build={build}
+            onChange={setRequest}
+            onEquip={equip}
+            onItem={(selected) => {
+              setItemSlot(undefined);
+              setItem(selected);
+            }}
+          />
+        )}
+        {tab === "market" && (
+          <MarketTab
+            catalog={catalog}
+            request={request}
+            priceSync={priceSync}
+            maintenance={maintenance}
+            onChange={setRequest}
+            onServer={changeServer}
+            notify={notify}
+          />
+        )}
+      </main>
+      <AppFooter catalog={catalog} />
+      <LaunchButton
+        starting={optimization.starting}
+        active={active}
+        disabled={request.constraints.length === 0 || !characterAllocation.valid}
+        withBase={Object.keys(request.filters.lockedSlots).length > 0}
+        onLaunch={() => void optimize()}
+      />
+      {criteria.editing && (
+        <ConstraintEditor
+          criterion={criteria.editing}
+          constraints={request.constraints}
+          catalog={catalog}
+          characterLevel={request.character.level}
+          stats={evaluation.stats}
+          weapon={weapon}
+          onSave={criteria.save}
+          onClose={criteria.close}
+        />
+      )}
+      {browser && (
+        <ItemBrowserModal
+          slot={browser.slot}
+          catalog={catalog}
+          request={request}
+          build={build}
+          onChange={setRequest}
+          onEquip={equip}
+          onItem={(selected) => {
+            setItemSlot(browser.slot);
+            setBrowser(null);
+            setItem(selected);
+          }}
+          onClose={closeBrowser}
+        />
+      )}
+      {item && (
+        <ItemDetail
+          item={item}
+          catalog={catalog}
+          request={request}
+          onChange={setRequest}
+          onEquip={(selected) => equip(selected, itemSlot ?? equippedItemSlot)}
+          onClose={closeItem}
+          onSet={(id) => {
+            setItem(null);
+            setBrowser(null);
+            setSetLink({ id, key: Date.now() });
+            setTab("items");
+          }}
+          build={build}
+          slot={itemSlot}
+          onRemove={equippedItemSlot ? () => unequip(equippedItemSlot) : undefined}
+          onReplace={equippedItemSlot ? () => {
+            setItem(null);
+            setBrowser({ slot: equippedItemSlot });
+          } : undefined}
+        />
+      )}
+      {help && <HelpModal onClose={closeHelp} />}
+      {toast && <Toast message={toast} />}
+    </>
+  );
+}

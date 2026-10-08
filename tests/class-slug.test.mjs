@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import ts from 'typescript';
 
-const source = ts.transpileModule(readFileSync(new URL('../apps/web/src/class-slug.ts', import.meta.url), 'utf8'), {
+const source = ts.transpileModule(readFileSync(new URL('../apps/web/src/lib/class-slug.ts', import.meta.url), 'utf8'), {
   compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
 }).outputText;
 const { classSlug } = await import(`data:text/javascript,${encodeURIComponent(source)}`);

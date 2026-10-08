@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import ts from 'typescript';
 
 // Exercise the same pure frontend function on every Node version supported by the project.
-const helper = ts.transpileModule(readFileSync(new URL('../apps/web/src/character-look.ts', import.meta.url), 'utf8'), {
+const helper = ts.transpileModule(readFileSync(new URL('../apps/web/src/lib/character-look.ts', import.meta.url), 'utf8'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
 }).outputText;
 const { characterLook } = await import(`data:text/javascript;base64,${Buffer.from(helper).toString('base64')}`);

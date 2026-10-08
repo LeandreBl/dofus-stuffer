@@ -105,7 +105,7 @@
     "reason": "Native client catalogue; no balance overlay.",
     "sourceVersion": "3.7.4.4"
   },
-  "catalogSha256": "f9edeeb0a7dbc3d2b267e14051437ecda585276c0bb51c1319a6ec195a2493a6",
+  "catalogSha256": "1b4c465288a6c18bf89ae55c69f6469792461649cf8319b1e10cc90c0c625e81",
   "counts": {
     "classes": 19,
     "characteristics": 120,
