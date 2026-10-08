@@ -67,6 +67,10 @@ export class AppController {
   @Header('Cache-Control', 'no-store')
   snapshot(@Param('id') id: string, @Headers('authorization') authorization: unknown) { return this.jobs.snapshot(id, bearerToken(authorization)); }
 
+  @Get('jobs/:id/queue')
+  @Header('Cache-Control', 'no-store')
+  queue(@Param('id') id: string, @Headers('authorization') authorization: unknown) { return this.jobs.queueStatus(id, bearerToken(authorization)); }
+
   @Post('jobs/:id/cancel')
   @HttpCode(200)
   @Header('Cache-Control', 'no-store')

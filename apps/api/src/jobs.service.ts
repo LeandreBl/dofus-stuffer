@@ -1,7 +1,7 @@
 import { HttpException, Inject, Injectable, NotFoundException, ServiceUnavailableException, type OnModuleDestroy } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { randomUUID } from 'node:crypto';
-import type { Catalog, OptimizationRequest } from '@dofus/shared';
+import type { Catalog, OptimizationRequest, QueueStatus } from '@dofus/shared';
 import { cancellationKey, QUEUE_NAME, RETENTION_SECONDS, tokenKey } from './config.js';
 import { RedisService } from './redis.service.js';
 import { hashToken, issueToken, validJobId, verifyToken } from './security.js';
@@ -93,6 +93,20 @@ export class JobsService implements OnModuleDestroy {
       }
     }
     return snapshot;
+  }
+
+  async queueStatus(id: string, token: unknown): Promise<QueueStatus> {
+    await this.authorize(id, token);
+    const paused = await this.queue.isPaused();
+    // BullMQ LPUSHes waiting jobs (into `paused` while paused) and workers take from the right: everything to our right is ahead.
+    const wait = this.queue.toKey(paused ? 'paused' : 'wait');
+    const [replies, workers] = await Promise.all([
+      this.redis.client.multi().llen(wait).lpos(wait, id).llen(this.queue.toKey('active')).exec(),
+      this.queue.getWorkersCount(),
+    ]);
+    if (!replies || replies.some(([error]) => error)) throw new ServiceUnavailableException('La file de recherche est temporairement indisponible.');
+    const [waiting, index, active] = replies.map(([, value]) => value as number | null);
+    return { ahead: index === null ? null : Number(waiting) - 1 - index, waiting: Number(waiting), active: Number(active), workers, paused };
   }
 
   async cancel(id: string, token: unknown): Promise<JobSnapshot> {

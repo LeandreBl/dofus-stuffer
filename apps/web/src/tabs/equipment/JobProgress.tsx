@@ -1,5 +1,5 @@
 import { Check, Info, LoaderCircle, RotateCcw, Square } from "lucide-react";
-import type { JobSnapshot } from "@dofus/shared";
+import type { JobSnapshot, QueueStatus } from "@dofus/shared";
 import { fmt } from "../../lib/format";
 
 export const statusTitles: Record<JobSnapshot["status"], string> = {
@@ -10,8 +10,9 @@ export const statusTitles: Record<JobSnapshot["status"], string> = {
   failed: "La recherche a rencontré un problème",
 };
 
-export function JobProgress({ job, active, connected, starting, onCancel, onRestart }: {
+export function JobProgress({ job, queue, active, connected, starting, onCancel, onRestart }: {
   job: JobSnapshot;
+  queue: QueueStatus | null;
   active: boolean;
   connected: boolean;
   starting: boolean;
@@ -46,6 +47,15 @@ export function JobProgress({ job, active, connected, starting, onCancel, onRest
             {active && (connected ? " · En direct" : " · Actualisation automatique")}
           </span>
         </div>
+        {job.status === "queued" && queue && (
+          <p className="progress-meta">
+            <span>
+              {queue.ahead === null ? "Démarrage imminent" : queue.ahead === 0 ? "Prochaine dans la file" : `${fmt(queue.ahead)} recherche(s) avant la tienne`}
+              {" · "}{fmt(queue.waiting)} en attente
+            </span>
+            <span>{queue.paused && "File en pause · "}{fmt(queue.active)} en cours · {fmt(queue.workers)} moteur(s)</span>
+          </p>
+        )}
         {job.message && <p className="inline-notice">{job.message}</p>}
         {job.error && (
           <p className="inline-notice" role="alert">

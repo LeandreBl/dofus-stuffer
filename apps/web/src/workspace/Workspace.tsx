@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   evaluateBuild,
   getCharacterAllocation,
@@ -59,6 +59,15 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
   const criteria = useCriterionEditor(request, setRequest, notify);
   const optimization = useOptimization({ catalog, initialReceipt: initial.receipt, setBuild, setCatalogUpdated });
   const { receipt, active } = optimization;
+  // Tell once per search when it cannot start right away.
+  const queueNotified = useRef("");
+  useEffect(() => {
+    const { job, queue } = optimization;
+    if (!job || !queue || queueNotified.current === job.id || queue.ahead === null) return;
+    queueNotified.current = job.id;
+    if (queue.ahead > 0 || queue.active >= queue.workers)
+      notify(`Ta recherche est en file d’attente (${queue.ahead + 1}e position). Survole la barre de progression pour suivre la file.`);
+  }, [optimization.job, optimization.queue, notify]);
   const evaluation = useMemo(
     () => evaluateBuild(catalog, manualBuildRequest(request), build),
     [catalog, request, build],
@@ -284,6 +293,7 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       {optimization.job && (
         <JobProgress
           job={optimization.job}
+          queue={optimization.queue}
           active={active}
           connected={optimization.connected}
           starting={optimization.starting}

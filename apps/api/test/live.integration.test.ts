@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { setTimeout as delay } from 'node:timers/promises';
-import { calculateSpellDamage, calculateWeaponDamage, evaluateBuild, getSpellLevel, type Catalog, type JobReceipt, type JobSnapshot, type OptimizationRequest } from '@dofus/shared';
+import { calculateSpellDamage, calculateWeaponDamage, evaluateBuild, getSpellLevel, type Catalog, type JobReceipt, type JobSnapshot, type OptimizationRequest, type QueueStatus } from '@dofus/shared';
 
 test('Live stack: unrequested equipment maluses reduce the score and survive Redis/WebSocket recovery', {
   skip: !process.env.API_URL, timeout: 15_000,
@@ -486,4 +486,47 @@ test('Live stack: independent critical chance and damage criteria survive valida
     assert.equal(recovered.status, 'completed');
     assert.deepEqual(recovered.results[0].constraints, complete.results[0].constraints);
   } finally { socket.close(); }
+});
+
+test('Live stack: a waiting search reports its queue position and the busy workers', {
+  skip: !process.env.API_URL, timeout: 90_000,
+}, async () => {
+  const base = process.env.API_URL!.replace(/\/$/, '');
+  const catalog = await fetch(`${base}/api/catalog`).then(response => response.json()) as Catalog;
+  const input: OptimizationRequest = {
+    character: { classId: catalog.classes[0].id, level: 200, allocationMode: 'manual', baseStats: {} },
+    constraints: [{ id: 'vitality', kind: 'stat', statKey: 'vitality', target: 4_000, relation: 'maximize', priority: 0, strict: false }],
+    target: { percent: {}, flat: {}, criticalResistance: 0, distance: 'ranged' },
+    filters: { excludedItemIds: [], excludedTypeIds: [], excludedCategories: [], lockedSlots: {} },
+    prices: { server: catalog.servers[0], values: {}, ownedItemIds: [], mode: 'total' }, seconds: 3,
+  };
+  const post = () => fetch(`${base}/api/jobs`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
+  const cancel = (receipt: JobReceipt) => fetch(`${base}/api/jobs/${receipt.id}/cancel`,
+    { method: 'POST', headers: { Authorization: `Bearer ${receipt.token}`, 'Content-Type': 'application/json' }, body: '{}' });
+  // Two back-to-back searches; the whole suite brushes the 20 searches/minute limit, so wait out the window once.
+  const startPair = async (retry: boolean): Promise<JobReceipt[]> => {
+    const receipts: JobReceipt[] = [];
+    for (const response of [await post(), await post()]) {
+      if (response.ok) receipts.push(await response.json() as JobReceipt);
+      else if (response.status === 429 && retry) {
+        for (const receipt of receipts) await cancel(receipt);
+        await delay(61_000);
+        return startPair(false);
+      } else assert.fail(await response.text());
+    }
+    return receipts;
+  };
+  const queueOf = (receipt: JobReceipt) => fetch(`${base}/api/jobs/${receipt.id}/queue`, { headers: { Authorization: `Bearer ${receipt.token}` } });
+  const [first, second] = await startPair(true);
+  try {
+    const forbidden = await queueOf({ ...second, token: first.token });
+    assert.equal(forbidden.status, 404);
+    const queue = await queueOf(second).then(response => response.json()) as QueueStatus;
+    assert.ok(queue.workers >= 1 && queue.active >= 1, JSON.stringify(queue));
+    assert.equal(queue.paused, false);
+    // The single worker is busy with the first search, so the second waits at the head of the line.
+    assert.equal(queue.ahead, queue.waiting - 1, JSON.stringify(queue));
+  } finally {
+    for (const receipt of [second, first]) await cancel(receipt);
+  }
 });

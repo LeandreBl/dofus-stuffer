@@ -5,6 +5,7 @@ import type {
   JobSnapshot,
   OptimizationRequest,
   PriceBook,
+  QueueStatus,
 } from "@dofus/shared";
 
 export type AutomaticPrices = {
@@ -68,6 +69,10 @@ export const api = {
   job: ({ id, token }: JobReceipt) =>
     request<JobSnapshot>(
       `/jobs/${encodeURIComponent(id)}`, { headers: { Authorization: `Bearer ${token}` } },
+    ),
+  queue: ({ id, token }: JobReceipt) =>
+    request<QueueStatus>(
+      `/jobs/${encodeURIComponent(id)}/queue`, { headers: { Authorization: `Bearer ${token}` } },
     ),
   cancel: ({ id, token }: JobReceipt) =>
     request<JobSnapshot>(`/jobs/${encodeURIComponent(id)}/cancel`, {

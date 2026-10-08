@@ -35,9 +35,16 @@ export function ResistancesPanel({ catalog, stats }: { catalog: Catalog; stats: 
           {rows.map(([label, key, unit]) => (
             <tr key={label}>
               <td>{label}</td>
-              {elements.map((element) => (
-                <td key={element}>{fmt(stats[key(element)] || 0)}{unit}</td>
-              ))}
+              {elements.map((element) => {
+                const value = stats[key(element)] || 0;
+                // Like power on characteristics: elemental damage, then in brackets the total with flat damage.
+                const flat = label === "Do." ? stats.allDamageBonus || 0 : 0;
+                return (
+                  <td key={element} title={flat ? `${fmt(value + flat)} avec les dommages fixes` : undefined}>
+                    {fmt(value)}{unit}{flat !== 0 && <small>({fmt(value + flat)})</small>}
+                  </td>
+                );
+              })}
             </tr>
           ))}
         </tbody>

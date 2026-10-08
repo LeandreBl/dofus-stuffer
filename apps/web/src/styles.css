@@ -2576,7 +2576,7 @@ svg.corner-loader {
 .stat-breakdown td:first-child > span { display: flex; align-items: center; gap: 5px; }
 .stat-breakdown .stat-icon { width: 20px; height: 20px; flex-shrink: 0; }
 .stat-breakdown td strong { color: #e2ebd2; font-weight: 550; }
-.stat-breakdown td small { display: block; color: #a5b86b; font-size: 9px; margin-top: 3px; }
+.stat-breakdown td small, .resist-table td small { display: block; color: #a5b86b; font-size: 9px; margin-top: 3px; }
 .power-description { color: var(--muted); font-size: 9px; line-height: 1.6; padding-top: 10px; margin-top: 12px; border-top: 1px solid #ffffff08; }
 .power-description strong { color: #c9d6a1; font-weight: 500; }
 .fm-controls { margin-top: 18px; padding-top: 16px; border-top: 1px solid #ffffff09; }

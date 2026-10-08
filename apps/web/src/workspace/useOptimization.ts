@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
-import type { Build, Catalog, JobReceipt, JobSnapshot, OptimizationRequest } from "@dofus/shared";
+import type { Build, Catalog, JobReceipt, JobSnapshot, OptimizationRequest, QueueStatus } from "@dofus/shared";
 import { api, followJob } from "../lib/api";
 
 /** Server-side search: start, cancel and follow a job; the selected result is applied live while it runs. */
@@ -65,6 +65,19 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
     );
   }, [receipt, catalog.version, catalog.revision, setBuild, setCatalogUpdated]);
 
+  // Queue position is not pushed: poll it only while the job waits for a worker.
+  const [queue, setQueue] = useState<QueueStatus | null>(null);
+  const queued = job?.status === "queued" && receipt?.id === job.id;
+  useEffect(() => {
+    setQueue(null);
+    if (!queued || !receipt) return;
+    let live = true;
+    const refresh = () => api.queue(receipt).then((next) => live && setQueue(next)).catch(() => {});
+    refresh();
+    const timer = window.setInterval(refresh, 3000);
+    return () => { live = false; window.clearInterval(timer); };
+  }, [queued, receipt]);
+
   /** Starts a search; throws when the server refuses it. */
   async function start(request: OptimizationRequest) {
     setStarting(true);
@@ -93,5 +106,5 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
     if (receipt) await api.cancel(receipt);
   };
 
-  return { starting, receipt, job, active, finished, dismissFinished: () => setFinished(null), connected, selectedResult, setSelectedResult, start, cancel };
+  return { starting, receipt, job, queue, active, finished, dismissFinished: () => setFinished(null), connected, selectedResult, setSelectedResult, start, cancel };
 }
