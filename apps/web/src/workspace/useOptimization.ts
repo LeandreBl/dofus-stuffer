@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import type { Build, Catalog, JobReceipt, JobSnapshot, OptimizationRequest } from "@dofus/shared";
 import { api, followJob } from "../lib/api";
 
-/** Server-side search: start, cancel and follow a job; the best result is applied once when it ends. */
+/** Server-side search: start, cancel and follow a job; the selected result is applied live while it runs. */
 export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogUpdated }: {
   catalog: Catalog;
   initialReceipt: JobReceipt | null;
@@ -15,7 +15,23 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
   const [connected, setConnected] = useState(false);
   const [selectedResult, setSelectedResult] = useState(0);
   const appliedResult = useRef("");
+  // Read from the job callback, which is not re-subscribed when the selection changes.
+  const selectedRef = useRef(selectedResult);
+  selectedRef.current = selectedResult;
   const active = !!job && ["queued", "running"].includes(job.status);
+  // How the last search seen running ended; cleared when a new one starts.
+  const [finished, setFinished] = useState<JobSnapshot["status"] | null>(null);
+  const wasActive = useRef(false);
+
+  useEffect(() => {
+    if (active) {
+      wasActive.current = true;
+      setFinished(null);
+    } else if (wasActive.current) {
+      wasActive.current = false;
+      setFinished(job?.status ?? null);
+    }
+  }, [active, job?.status]);
 
   useEffect(() => {
     if (!receipt) return;
@@ -31,14 +47,13 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
         setJob((previous) =>
           previous && previous.id === next.id && previous.updatedAt > next.updatedAt ? previous : next,
         );
-        if (
-          next.results.length &&
-          ["completed", "cancelled"].includes(next.status) &&
-          appliedResult.current !== next.id
-        ) {
-          appliedResult.current = next.id;
-          setBuild(next.results[0].build);
-          setSelectedResult(0);
+        const running = ["queued", "running"].includes(next.status);
+        if (next.results.length && (running || appliedResult.current !== next.id)) {
+          if (!running) appliedResult.current = next.id;
+          const index = Math.min(selectedRef.current, next.results.length - 1);
+          const live = next.results[index].build;
+          setBuild((previous) => (JSON.stringify(previous) === JSON.stringify(live) ? previous : live));
+          setSelectedResult(index);
         }
       },
       setConnected,
@@ -57,6 +72,7 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
       const result = await api.optimize(request);
       setCatalogUpdated(false);
       setReceipt(result);
+      setSelectedResult(0);
       const now = new Date().toISOString();
       setJob({
         id: result.id,
@@ -77,5 +93,5 @@ export function useOptimization({ catalog, initialReceipt, setBuild, setCatalogU
     if (receipt) await api.cancel(receipt);
   };
 
-  return { starting, receipt, job, active, connected, selectedResult, setSelectedResult, start, cancel };
+  return { starting, receipt, job, active, finished, dismissFinished: () => setFinished(null), connected, selectedResult, setSelectedResult, start, cancel };
 }

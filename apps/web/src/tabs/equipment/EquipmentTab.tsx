@@ -5,13 +5,12 @@ import { downloadJson } from "../../lib/files";
 import { withEquipmentLocks } from "../../lib/equipment-locks";
 import { BuildChecks } from "./BuildChecks";
 import { BuildView } from "./build/BuildView";
-import { JobProgress } from "./JobProgress";
 import { ResultTabs } from "./ResultTabs";
 import { StuffActions } from "./StuffActions";
 
 export function EquipmentTab({
-  catalog, request, build, evaluation, job, searching, starting, connected, selectedResult,
-  setRequest, setBuild, notify, onSelectResult, onCancel, onRestart, onSlot, onBrowse, onImport, onBuilder, onSpells, onPrices,
+  catalog, request, build, evaluation, job, searching, starting, selectedResult,
+  setRequest, setBuild, notify, onSelectResult, onSlot, onBrowse, onImport, onBuilder, onSpells, onPrices,
 }: {
   catalog: Catalog;
   request: OptimizationRequest;
@@ -21,14 +20,11 @@ export function EquipmentTab({
   /** A search is queued or running. */
   searching: boolean;
   starting: boolean;
-  connected: boolean;
   selectedResult: number;
   setRequest: Dispatch<SetStateAction<OptimizationRequest>>;
   setBuild: Dispatch<SetStateAction<Build>>;
   notify: (message: string) => void;
   onSelectResult: (index: number) => void;
-  onCancel: () => void;
-  onRestart: () => void;
   onSlot: (slot: Slot, item?: EquipmentItem) => void;
   onBrowse: () => void;
   onImport: () => void;
@@ -49,12 +45,12 @@ export function EquipmentTab({
   };
   return (
     <>
-      {job && <JobProgress job={job} active={searching} connected={connected} starting={starting} onCancel={onCancel} onRestart={onRestart} />}
       {!!job?.results.length && (
         <ResultTabs
           results={job.results}
           lockedSlots={request.filters.lockedSlots}
           selected={selectedResult}
+          searching={searching}
           onSelect={(index, result) => {
             onSelectResult(index);
             setBuild(result.build);

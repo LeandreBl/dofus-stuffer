@@ -1,4 +1,4 @@
-import { Info, Shield, Sparkles } from "lucide-react";
+import { Info, LoaderCircle, Shield, Sparkles } from "lucide-react";
 import { formatItemCondition, type Catalog, type EquipmentItem, type OptimizationRequest } from "@dofus/shared";
 import { GameImage } from "../components/GameImage";
 import { StatIcon } from "../components/StatIcon";
@@ -6,8 +6,10 @@ import { readableText, weaponEffectText } from "../lib/effect-text";
 import { fmt, money, statUnit } from "../lib/format";
 
 /** Read-only contents, separate from the editor and its action controls. */
-export function ItemSummary({ item, catalog, request, issues }: {
+export function ItemSummary({ item, catalog, request, issues, note }: {
   item: EquipmentItem; catalog: Catalog; request: OptimizationRequest; issues?: string[];
+  /** Highlighted line under the heading, e.g. the slot is still being searched. */
+  note?: string;
 }) {
   const set = catalog.sets.find(set => set.id === item.setId);
   const price = request.prices.values[String(item.id)] ?? request.prices.automaticValues?.[String(item.id)];
@@ -17,6 +19,7 @@ export function ItemSummary({ item, catalog, request, issues }: {
       <h3>{item.name}</h3><p>Niveau {item.level} · {item.typeName}</p>
       {set && <span className="item-hover-set"><Shield size={12} />{set.name}</span>}
     </div></div>
+    {note && <p className="item-hover-note"><LoaderCircle className="spin" size={12} />{note}</p>}
     <div className="item-hover-stats">{Object.entries(item.stats).filter(([, value]) => value !== 0).map(([key, value]) => {
       const stat = catalog.stats.find(stat => stat.key === key);
       return <div className={`stat-line ${value < 0 ? "malus" : ""}`} key={key}>

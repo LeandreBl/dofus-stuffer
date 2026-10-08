@@ -1,4 +1,4 @@
-import { AlertTriangle, Crown, Diamond, Footprints, Info, LockKeyhole, Package, Shield, Swords, UnlockKeyhole } from "lucide-react";
+import { AlertTriangle, Crown, Diamond, Footprints, Info, LoaderCircle, LockKeyhole, Package, Shield, Swords, UnlockKeyhole } from "lucide-react";
 import type { Catalog, EquipmentItem, inspectEquipment, OptimizationRequest, Slot } from "@dofus/shared";
 import { GameImage } from "../../../components/GameImage";
 import { ItemHover } from "../../../items/ItemHover";
@@ -29,10 +29,11 @@ export function EquipmentSlot({ slot, item, catalog, request, diagnostic, search
   const reason = diagnostic?.issues.map((issue) => issue.message).join(" ");
   const condition = diagnostic?.condition?.text;
   const locked = !!item && request.filters.lockedSlots[slot] === item.id;
-  const description = [item?.name || slotNames[slot], reason, condition ? `Condition : ${condition}` : undefined].filter(Boolean).join(" · ");
+  const pending = searching && !locked ? "En cours de calcul : cet objet est susceptible de changer." : undefined;
+  const description = [item?.name || slotNames[slot], pending, reason, condition ? `Condition : ${condition}` : undefined].filter(Boolean).join(" · ");
   return (
     <div className="equipment-slot-wrapper">
-      <ItemHover item={item} catalog={catalog} request={request} issues={diagnostic?.issues.map((issue) => issue.message)}><button
+      <ItemHover item={item} catalog={catalog} request={request} issues={diagnostic?.issues.map((issue) => issue.message)} note={pending}><button
         className={`equipment-slot ${locked ? "locked" : ""} ${diagnostic?.invalid ? "invalid" : unverified ? "unverified" : ""}`}
         onClick={() => onSlot(slot, item)}
         aria-label={`${slotNames[slot]} : ${item?.name || "emplacement vide"}${diagnostic?.invalid ? " · Incompatible" : unverified ? " · Compatibilité à vérifier" : ""}${reason ? ` · ${reason}` : ""}`}
@@ -46,6 +47,7 @@ export function EquipmentSlot({ slot, item, catalog, request, diagnostic, search
             <small>{slotNames[slot]}</small>
           </>
         )}
+        {pending && <LoaderCircle className="spin corner-loader" size={11} aria-hidden="true" />}
         {(diagnostic?.invalid || unverified) && <span className="slot-compatibility" aria-hidden="true">{diagnostic?.invalid ? <AlertTriangle size={12} /> : <Info size={12} />}</span>}
       </button></ItemHover>
       {item && <button className={`slot-lock-toggle ${locked ? "active" : ""}`}

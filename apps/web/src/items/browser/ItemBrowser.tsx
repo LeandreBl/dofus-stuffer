@@ -120,6 +120,7 @@ export function ItemBrowser({
               excluded={isExcluded(request, item)}
               locked={slot ? request.filters.lockedSlots[slot] === item.id : lockedIds.includes(item.id)}
               statKeys={statKeys}
+              preview={!slot}
               onOpen={() => onItem(item)}
               onSet={openSet}
               onExclude={() => onChange(toggleExcluded(request, item))}

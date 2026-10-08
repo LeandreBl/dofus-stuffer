@@ -5,7 +5,7 @@ import { StatIcon } from "../../components/StatIcon";
 import { fmt, statUnit } from "../../lib/format";
 import { ItemHover } from "../ItemHover";
 
-export function ItemCard({ item, catalog, request, excluded, locked, statKeys, onOpen, onSet, onExclude, onLock, onEquip }: {
+export function ItemCard({ item, catalog, request, excluded, locked, statKeys, preview = true, onOpen, onSet, onExclude, onLock, onEquip }: {
   item: EquipmentItem;
   catalog: Catalog;
   request: OptimizationRequest;
@@ -13,6 +13,8 @@ export function ItemCard({ item, catalog, request, excluded, locked, statKeys, o
   locked: boolean;
   /** Characteristics highlighted by the active filters. */
   statKeys: string[];
+  /** Shows the hover preview card. */
+  preview?: boolean;
   onOpen: () => void;
   onSet: (setId: number) => void;
   onExclude: () => void;
@@ -20,7 +22,7 @@ export function ItemCard({ item, catalog, request, excluded, locked, statKeys, o
   onEquip: () => void;
 }) {
   return (
-    <ItemHover item={item} catalog={catalog} request={request}><article
+    <ItemHover item={preview ? item : undefined} catalog={catalog} request={request}><article
       className={`item-card ${excluded ? "excluded" : ""} ${locked ? "locked" : ""}`}
     >
       <button

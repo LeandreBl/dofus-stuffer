@@ -29,6 +29,7 @@ import { parseProfile, parseStuff } from "./profile-transfer";
 import { initialState, saveWorkspace, STORAGE_KEY } from "./storage";
 import { tabTitles } from "./tabs";
 import { Toast } from "./Toast";
+import { JobProgress, statusTitles } from "../tabs/equipment/JobProgress";
 import { useCriterionEditor } from "./useCriterionEditor";
 import { useMaintenance } from "./useMaintenance";
 import { useNavigation } from "./useNavigation";
@@ -217,14 +218,11 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
             job={optimization.job}
             searching={active}
             starting={optimization.starting}
-            connected={optimization.connected}
             selectedResult={optimization.selectedResult}
             setRequest={setRequest}
             setBuild={setBuild}
             notify={notify}
             onSelectResult={optimization.setSelectedResult}
-            onCancel={() => void cancel()}
-            onRestart={() => void optimize()}
             onSlot={(slot, selected) => {
               setItemSlot(slot);
               if (selected) setItem(selected);
@@ -280,8 +278,19 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
         active={active}
         disabled={request.constraints.length === 0 || !characterAllocation.valid}
         withBase={Object.keys(request.filters.lockedSlots).length > 0}
+        percent={active ? optimization.job?.progress.percent : undefined}
         onLaunch={() => void optimize()}
       />
+      {optimization.job && (
+        <JobProgress
+          job={optimization.job}
+          active={active}
+          connected={optimization.connected}
+          starting={optimization.starting}
+          onCancel={() => void cancel()}
+          onRestart={() => void optimize()}
+        />
+      )}
       {criteria.editing && (
         <ConstraintEditor
           criterion={criteria.editing}
@@ -335,6 +344,9 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       )}
       {help && <HelpModal onClose={closeHelp} />}
       {toast && <Toast message={toast} />}
+      {optimization.finished && (
+        <Toast className="search-done" message={statusTitles[optimization.finished]} onClose={optimization.dismissFinished} />
+      )}
     </>
   );
 }

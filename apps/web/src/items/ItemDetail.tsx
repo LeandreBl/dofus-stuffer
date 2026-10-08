@@ -63,7 +63,7 @@ export function ItemDetail({
       </div>
       {!!set?.bonuses.length && <section className="item-compatibility">
         <h4>Bonus de la {set.name}</h4>
-        <SetBonuses set={set} catalog={catalog} active={set.itemIds.filter((id) => Object.values(build.slots).includes(id)).length} />
+        <SetBonuses key={set.id} set={set} catalog={catalog} active={set.itemIds.filter((id) => Object.values(build.slots).includes(id)).length} />
       </section>}
       <ItemConditions item={item} catalog={catalog} request={request} build={build} previewSlot={slot || equippedSlot || chooseSlot(item, build)} equipped={!!equippedSlot} />
       {!!item.unsupportedEffects?.length && (

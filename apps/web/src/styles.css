@@ -613,6 +613,14 @@ select {
 .items-panel > .catalog-toolbar:first-child {
   margin-top: 0;
 }
+/* The modal is too narrow for one row: filters wrap, search gets its own line below. */
+.modal .catalog-toolbar {
+  flex-wrap: wrap;
+}
+.modal .catalog-toolbar .picker-search {
+  order: 1;
+  flex-basis: 100%;
+}
 .item-stat-filters {
   margin: -6px 0 16px;
   padding: 14px;
@@ -936,7 +944,7 @@ select {
 }
 .button.launch-button:disabled {
   opacity: 1;
-  background: #596443;
+  background: linear-gradient(90deg, #7d9450 var(--progress, 0%), #596443 var(--progress, 0%));
   color: #d7e0ca;
   border-color: #71805b;
 }
@@ -1431,9 +1439,42 @@ select {
 .modal-wide {
   width: 750px;
 }
+/* Pinned to the bottom of the screen: only the track shows, details on hover. */
+.progress-dock {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  padding-top: 10px;
+  outline: none;
+}
+.progress-dock .progress-track {
+  height: 6px;
+  margin: 0;
+  border-radius: 0;
+}
+.progress-dock .progress-fill {
+  border-radius: 0;
+}
 .progress-card {
+  position: absolute;
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: 14px;
+  width: min(560px, calc(100vw - 32px));
   border-color: #b5d37940;
-  margin-bottom: 23px;
+  box-shadow: 0 12px 36px #0007;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+}
+.progress-dock:hover .progress-card,
+.progress-dock:focus-within .progress-card,
+.progress-dock.open .progress-card {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
 }
 .progress-head {
   display: flex;
@@ -1485,7 +1526,9 @@ select {
   border-radius: 11px;
   text-align: left;
   min-width: 195px;
+  position: relative;
 }
+
 .result-tab.active {
   background: #cde1820c;
   border-color: #cde18280;
@@ -1641,6 +1684,13 @@ select {
 }
 .equipment-slot > svg {
   color: #728265;
+}
+/* Small spinner on what the running search may still change. */
+svg.corner-loader {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  color: var(--accent);
 }
 .equipment-slot small {
   position: absolute;
@@ -2379,6 +2429,22 @@ select {
   align-items: center;
   max-width: 90vw;
 }
+.toast.search-done {
+  top: calc(16px + env(safe-area-inset-top));
+  left: calc(16px + env(safe-area-inset-left));
+  bottom: auto;
+  transform: none;
+  z-index: 200;
+}
+.toast-close {
+  display: grid;
+  place-items: center;
+  padding: 2px;
+  margin-left: 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
 .sr-only {
   position: absolute;
   width: 1px;
@@ -3065,6 +3131,7 @@ select {
 .item-hover-card section { border-top: 1px solid var(--line); margin-top: 13px; padding-top: 11px; }
 .item-hover-card h4 { display: flex; align-items: center; gap: 5px; margin: 0 0 6px; font-size: 11px; color: #dbe3d5; }
 .item-hover-conditions p, .item-hover-issues p { color: #e1bd91; }
+.item-hover-note { display: flex; align-items: center; gap: 6px; margin-top: 10px; font-size: 11px; color: var(--accent); }
 .item-hover-passive + .item-hover-passive { margin-top: 10px; }
 .item-hover-passive > strong { font-size: 11px; color: var(--accent); }
 .item-hover-card footer { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); margin-top: 14px; padding-top: 12px; font-size: 10px; color: var(--muted); }
@@ -3119,7 +3186,10 @@ button.item-card-set:hover {
   font-size: 10px;
 }
 .set-tier.active {
-  outline: 1px solid var(--accent);
+  background: #d1e97f14;
+}
+.set-tier-picker + .set-tiers {
+  margin-top: 8px;
 }
 .set-tier-picker {
   display: flex;

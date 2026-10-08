@@ -1,6 +1,6 @@
 import { setImmediate as yieldToEventLoop } from 'node:timers/promises';
 import {
-  allocateCharacterStats, calculateEquipmentMaluses, calculateSpellDamage, getSpellElements, canIncludePower, CHARACTER_STATS, characterPointCost, evaluateBuild, getCharacterAllocation, getSpellLevel, getStatConstraintValue, SLOTS, slotType,
+  allocateCharacterStats, calculateEquipmentMaluses, calculateSpellDamage, defaultTarget, getSpellElements, canIncludePower, CHARACTER_STATS, characterPointCost, evaluateBuild, getCharacterAllocation, getSpellLevel, getStatConstraintValue, SLOTS, slotType,
   type Build, type BuildEvaluation, type Catalog, type EquipmentItem,
   type ExoStat, type ItemCondition, type JobProgress, type OptimizationRequest, type Slot, type Stats,
 } from '@dofus/shared';
@@ -41,6 +41,18 @@ function itemHeuristic(item: EquipmentItem, request: OptimizationRequest, catalo
         const direction = constraint.relation === 'atMost' || constraint.relation === 'minimize' ? -1 : 1;
         const baseChance = constraint.kind === 'weapon' ? item.weapon?.criticalHitProbability || 0 : 0;
         score += weight * direction * ((item.stats.criticalHit || 0) + baseChance) / Math.max(1, constraint.target);
+      } else if (constraint.kind === 'spell') {
+        // Rank by the item's real damage gain: crit damage, flat damage and the
+        // spell's elements weigh what the exact evaluator says they weigh.
+        const spell = catalog.spells.find(value => value.id === constraint.spellId);
+        const damage = (stats: Stats) => {
+          if (!spell) return 0;
+          const turn = calculateSpellDamage(spell, stats, defaultTarget(), request.character.level, { catalog, scenario: constraint.scenario })
+            .turns.find(entry => entry.turn === (constraint.turnOffset ?? 0));
+          return (constraint.mode === 'critical' ? turn?.critical : turn?.normal)?.[constraint.metric === 'min' || constraint.metric === 'max' ? constraint.metric : 'average'] ?? 0;
+        };
+        const base = damage({});
+        score += weight * (damage(item.stats) - base) / Math.max(1, base) / 2.5;
       } else {
         for (const [key, value] of Object.entries(item.stats)) {
           if (/strength|intelligence|chance|agility|power|damage|critical/i.test(key)) score += weight * value / 250;

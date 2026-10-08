@@ -1,14 +1,16 @@
-import { Layers3, Swords } from "lucide-react";
+import { Layers3, LoaderCircle, Swords } from "lucide-react";
 import type { JobSnapshot, OptimizationRequest, Slot } from "@dofus/shared";
 import { money } from "../../lib/format";
 
 type Result = JobSnapshot["results"][number];
 
 /** The best result and its alternatives; one replacing a locked item cannot be picked. */
-export function ResultTabs({ results, lockedSlots, selected, onSelect }: {
+export function ResultTabs({ results, lockedSlots, selected, searching, onSelect }: {
   results: Result[];
   lockedSlots: OptimizationRequest["filters"]["lockedSlots"];
   selected: number;
+  /** The search is still running: results may still improve. */
+  searching: boolean;
   onSelect: (index: number, result: Result) => void;
 }) {
   return (
@@ -33,6 +35,7 @@ export function ResultTabs({ results, lockedSlots, selected, onSelect }: {
                   : "À vérifier"}
               </small>
             </span>
+            {searching && <LoaderCircle className="spin corner-loader" size={11} aria-label="Recherche en cours" />}
           </button>
         );
       })}
