@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://dofus-stuffer.notdotio.com/sitemap.xml
