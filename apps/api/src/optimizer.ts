@@ -76,10 +76,11 @@ function itemHeuristic(item: EquipmentItem, request: OptimizationRequest, catalo
 interface Candidate { evaluation: BuildEvaluation; penalty: number; }
 const cloneBuild = (build: Build): Build => ({ slots: { ...build.slots }, exoBonuses: [...(build.exoBonuses || [])], ...(build.baseStats ? { baseStats: { ...build.baseStats } } : {}) });
 const exoSignature = (build: Build) => [...(build.exoBonuses || [])].sort().join('.');
-const gearSignature = (build: Build) => `${SLOTS.map(slot => build.slots[slot] || 0).join('.')}|${exoSignature(build)}`;
-const signature = (build: Build) => `${gearSignature(build)}|${CHARACTER_STATS.map(stat => build.baseStats?.[stat] || 0).join('.')}`;
 // Slot permutations do not make a new equipment alternative; retain repeated legal rings.
 const equipmentSignature = (build: Build) => `${Object.values(build.slots).filter(id => id !== undefined).sort((a, b) => a! - b!).join('.')}|${exoSignature(build)}`;
+// Each item fits one slot type, so the sorted ids identify the build: reordering
+// dofus or rings hits the cache instead of being evaluated again.
+const signature = (build: Build) => `${equipmentSignature(build)}|${CHARACTER_STATS.map(stat => build.baseStats?.[stat] || 0).join('.')}`;
 
 const derivedAllocation: Record<string, { stat: string; factor: number }> = {
   hitPoints: { stat: 'vitality', factor: 1 }, magicFind: { stat: 'chance', factor: 0.1 },
@@ -195,7 +196,7 @@ export async function optimize(catalog: Catalog, request: OptimizationRequest, h
     return merged;
   };
   const minimumStatsForBuild = (build: Build): Stats => {
-    const key = gearSignature(build);
+    const key = equipmentSignature(build);
     const existing = minimumsCache.get(key);
     if (existing) return existing;
     const baseline = evaluateBuild(catalog, { ...request, constraints: [] }, { ...build, baseStats: {} }).stats;
@@ -317,7 +318,9 @@ export async function optimize(catalog: Catalog, request: OptimizationRequest, h
     cache.set(key, candidate);
     if (evaluation.valid) {
       feasible += 1;
-      const equipmentKey = equipmentSignature(build);
+      // One result per gear set: dofus/trophy variants of the same gear would
+      // otherwise fill the list, and restarts from it would circle one build.
+      const equipmentKey = SLOTS.filter(slot => slotType(slot) !== 'dofus').map(slot => build.slots[slot] || 0).sort((a, b) => a - b).join('.');
       const previous = winners.get(equipmentKey);
       if (!previous || evaluation.score > previous.score) winners.set(equipmentKey, evaluation);
       if (winners.size > 5) {
