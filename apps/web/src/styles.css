@@ -1105,13 +1105,51 @@ select {
 .app-footer {
   max-width: 1500px;
   margin: 15px auto 0;
-  padding: 20px 30px calc(104px + env(safe-area-inset-bottom));
+  padding: 20px 30px;
   border-top: 1px solid #ffffff07;
   display: flex;
   justify-content: space-between;
   gap: 15px;
   color: #63715f;
   font-size: 10px;
+}
+.seo-content {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 10px 30px calc(104px + env(safe-area-inset-bottom));
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.seo-content h1 {
+  font-size: 18px;
+}
+.seo-content h1,
+.seo-content h2,
+.seo-content dt {
+  color: #dfe6dc;
+}
+.seo-content h2 {
+  margin-top: 26px;
+  font-size: 14px;
+}
+.seo-content a {
+  color: var(--soft);
+}
+.seo-classes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px 16px;
+  padding: 0;
+  list-style: none;
+}
+.seo-spells dt {
+  margin-top: 12px;
+  font-weight: 600;
+}
+.seo-spells dd {
+  margin: 2px 0 0;
+  white-space: pre-line;
 }
 .app-footer span {
   display: flex;
@@ -2727,8 +2765,11 @@ select {
   }
   .app-footer {
     display: block;
-    padding: 18px 16px calc(96px + env(safe-area-inset-bottom));
+    padding: 18px 16px;
     line-height: 1.7;
+  }
+  .seo-content {
+    padding: 10px 16px calc(96px + env(safe-area-inset-bottom));
   }
   .launch-button {
     right: calc(16px + env(safe-area-inset-right));

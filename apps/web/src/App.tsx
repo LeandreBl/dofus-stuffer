@@ -42,6 +42,7 @@ import {
 } from "@dofus/shared";
 import { api, followJob, type MaintenanceStatus, type PriceSyncState } from "./api";
 import { manualBuildRequest } from "./build-preview";
+import { classSlug } from "./class-slug";
 import { withEquipmentLocks } from "./equipment-locks";
 import { withoutCreatureTarget } from "./spell-scenario";
 import { CharacterEditor } from "./CharacterEditor";
@@ -78,8 +79,11 @@ const tabs = [
 ] as const;
 
 function initialState(catalog: Catalog): SavedState {
+  // Class pages (/classe/iop/) open a fresh workspace on their class; saved workspaces keep theirs.
+  const pageClass = location.pathname.split("/")[2];
   const character = defaultCharacter(
-    catalog.classes.find((gameClass) => gameClass.name === "Crâ")?.id || 9,
+    catalog.classes.find((gameClass) => classSlug(gameClass.name) === pageClass)?.id ||
+      catalog.classes.find((gameClass) => gameClass.name === "Crâ")?.id || 9,
     200,
   );
   const request: OptimizationRequest = {

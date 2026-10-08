@@ -1,8 +1,9 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { seoPages } from "./seo-pages.ts";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), seoPages()],
   server: {
     port: 5173,
     proxy: {

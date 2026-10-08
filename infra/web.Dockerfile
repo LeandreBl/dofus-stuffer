@@ -11,6 +11,7 @@ RUN npm ci --ignore-scripts --no-audit --no-fund
 COPY packages/shared packages/shared
 COPY packages/renderer packages/renderer
 COPY apps/web apps/web
+COPY data/catalog.json data/catalog.json
 RUN npm run build -w @dofus/shared && npm run build -w @dofus/web
 
 FROM ${NGINX_IMAGE}
