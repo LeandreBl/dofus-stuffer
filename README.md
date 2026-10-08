@@ -232,9 +232,7 @@ L'import lit uniquement les fichiers statiques du jeu et conserve la provenance,
 | `tests/` et `apps/api/test/` | Tests du moteur, de l'API et de l'intégration |
 | `docs/` | Plan produit, architecture, maintenance et rapports de vérification |
 | `graphify-out/` | Inventaire et extraction des relations du projet générés par Graphify |
-| `legacy/prototype/` | Ancienne maquette statique et ses tests, conservés comme archive |
 
-L'ancienne maquette ne sert plus au lancement de l'application actuelle.
 
 ## Documentation
 
