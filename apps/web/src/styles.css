@@ -2264,6 +2264,7 @@ select {
 }
 .character-editor-head {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
@@ -2280,9 +2281,6 @@ select {
   margin: 0;
 }
 .character-editor-head > div:first-child { max-width: 390px; }
-.proposed-allocation { text-align: center; padding: 9px 5px; border-radius: 6px; background: #d1e97f07; border: 1px solid #d1e97f15; }
-.proposed-allocation strong { display: block; color: #d9e8bf; font-size: 14px; font-variant-numeric: tabular-nums; }
-.proposed-allocation small { color: var(--muted); font-size: 8px; display: block; margin-top: 4px; }
 .allocation-options { margin-top: 15px; font-size: 10px; color: var(--muted); }
 .allocation-options summary { cursor: pointer; }
 .allocation-options .segment { margin: 12px 0; }
