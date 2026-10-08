@@ -320,7 +320,7 @@ export async function optimize(catalog: Catalog, request: OptimizationRequest, h
       feasible += 1;
       // One result per gear set: dofus/trophy variants of the same gear would
       // otherwise fill the list, and restarts from it would circle one build.
-      const equipmentKey = SLOTS.filter(slot => slotType(slot) !== 'dofus').map(slot => build.slots[slot] || 0).sort((a, b) => a - b).join('.');
+      const equipmentKey = SLOTS.filter(slot => slotType(slot) !== 'dofus').map(slot => build.slots[slot] || 0).sort((a, b) => a - b).join('.') + `|${exoSignature(build)}`;
       const previous = winners.get(equipmentKey);
       if (!previous || evaluation.score > previous.score) winners.set(equipmentKey, evaluation);
       if (winners.size > 5) {
