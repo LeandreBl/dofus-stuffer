@@ -202,6 +202,10 @@ Les contrôles couvrent le parcours HTTP → Redis → worker → WebSocket et l
 
 Pour travailler avec le rechargement du front, `npm run dev:web` lance Vite sur le port 5173. Il attend une API locale sur le port 3000 et lui transmet `/api` et `/socket.io`. L'API et le worker démarrent avec `npm run dev:api`, dans deux terminaux distincts, avec respectivement `ROLE=api` et `ROLE=worker`. Tous deux utilisent le même `REDIS_URL`, par défaut `redis://127.0.0.1:6379`. Redis n'est pas publié sur l'hôte par le Compose standard : ce mode nécessite une instance Redis locale accessible ou une configuration Compose de développement adaptée.
 
+## Panel d'administration
+
+`/admin/` affiche les statistiques des recherches sur 30 jours (lancées, terminées, annulées, échouées, temps de calcul), les recherches en cours avec leur progression, et permet d'arrêter une recherche, de mettre la file en pause et de lancer la maintenance des données. Il est désactivé tant que `ADMIN_TOKEN` (32 caractères minimum, par exemple `openssl rand -base64 32`) n'est pas défini dans `.env`. Les mauvais jetons sont limités à 10 essais par quart d'heure et par adresse. En développement, `npm run dev:admin` lance le panel sur le port 5174 avec la même API locale sur le port 3000.
+
 ## Actualiser les données
 
 Le snapshot fourni suffit au démarrage : le serveur Linux n'a besoin ni du jeu ni de Python. Pour régénérer les valeurs depuis une installation du client Dofus, sur le poste d'import uniquement, installer UnityPy 1.25.4 puis utiliser :

@@ -65,6 +65,7 @@ services:
       PORT: ${API_PORT:?}
       TRUSTED_PROXY_HOSTS: ${TRAEFIK_PROXY_HOST:?}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?}
+      ADMIN_TOKEN: ${ADMIN_TOKEN-}
       ROLE: api
     volumes:
       - game-data:/var/lib/dofus-stuffer:ro

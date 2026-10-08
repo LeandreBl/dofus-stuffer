@@ -5,7 +5,7 @@ import type { Catalog, OptimizationRequest } from '@dofus/shared';
 import { cancellationKey, QUEUE_NAME, RETENTION_SECONDS, tokenKey } from './config.js';
 import { RedisService } from './redis.service.js';
 import { hashToken, issueToken, validJobId, verifyToken } from './security.js';
-import { isTerminal, readSnapshot, writeSnapshot, type JobSnapshot } from './state.js';
+import { countStat, isTerminal, readSnapshot, writeSnapshot, type JobSnapshot } from './state.js';
 import { CatalogService } from './catalog.service.js';
 import { clientId } from './abuse-limits.js';
 import { reservationKey, reserveJob } from './job-admission.js';
@@ -62,6 +62,7 @@ export class JobsService implements OnModuleDestroy {
     } finally {
       await this.redis.client.zrem(reservationKey(this.queue), id).catch(() => {});
     }
+    await countStat(this.redis.client, 'created').catch(() => {});
     return { id, token, status: 'queued' as const };
   }
 
@@ -95,7 +96,13 @@ export class JobsService implements OnModuleDestroy {
   }
 
   async cancel(id: string, token: unknown): Promise<JobSnapshot> {
-    const snapshot = await this.snapshot(id, token);
+    await this.authorize(id, token);
+    return this.stop(id);
+  }
+
+  /** Stops a job the caller has already authorized (owner token or admin). */
+  async stop(id: string): Promise<JobSnapshot> {
+    const snapshot = await this.read(id);
     if (isTerminal(snapshot.status)) return snapshot;
     await this.redis.client.set(cancellationKey(id), '1', 'EX', RETENTION_SECONDS);
     const job = await this.queue.getJob(id);

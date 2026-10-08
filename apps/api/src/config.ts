@@ -10,3 +10,6 @@ export const redisUrl = () => {
 export const snapshotKey = (id: string) => `dofus:job:${id}:snapshot`;
 export const tokenKey = (id: string) => `dofus:job:${id}:token`;
 export const cancellationKey = (id: string) => `dofus:job:${id}:cancel`;
+export const STATS_RETENTION_SECONDS = 90 * 86_400;
+/** One hash per UTC day: created/completed/cancelled/failed counters plus summed compute. */
+export const statsKey = (day: string) => `dofus:stats:${day}`;

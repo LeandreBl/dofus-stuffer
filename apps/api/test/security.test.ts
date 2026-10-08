@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { bearerToken, hashToken, issueToken, validJobId, verifyToken } from '../src/security.js';
+import { adminEnabled, bearerToken, hashToken, issueToken, validJobId, verifyAdmin, verifyToken } from '../src/security.js';
 import { clientAddress, clientId, proxyTrust } from '../src/abuse-limits.js';
 import { JobsGateway } from '../src/jobs.gateway.js';
 import { allowedOrigin } from '../src/socket-security.js';
@@ -148,4 +148,20 @@ test('HTTP feeds and redirects that downgrade HTTPS are rejected before fetching
   assert.equal(requested.length, 0);
   await assert.rejects(fetchLimited('https://test.invalid/secure', 1000, fetcher), /HTTPS/);
   assert.deepEqual(requested, ['https://test.invalid/secure']);
+});
+
+test('Admin access stays closed without a long ADMIN_TOKEN and only accepts that exact bearer', () => {
+  const previous = process.env.ADMIN_TOKEN;
+  try {
+    process.env.ADMIN_TOKEN = 'short';
+    assert.equal(adminEnabled(), false);
+    assert.equal(verifyAdmin('Bearer short'), false);
+    process.env.ADMIN_TOKEN = 'a'.repeat(40);
+    assert.equal(verifyAdmin(`Bearer ${'a'.repeat(40)}`), true);
+    assert.equal(verifyAdmin(`Bearer ${'a'.repeat(39)}b`), false);
+    assert.equal(verifyAdmin('a'.repeat(40)), false);
+    assert.equal(verifyAdmin(undefined), false);
+  } finally {
+    if (previous === undefined) delete process.env.ADMIN_TOKEN; else process.env.ADMIN_TOKEN = previous;
+  }
 });
