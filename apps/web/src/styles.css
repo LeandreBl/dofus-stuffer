@@ -949,6 +949,40 @@ select {
   color: #d7e0ca;
   border-color: #71805b;
 }
+.launch-info {
+  position: fixed;
+  right: calc(24px + env(safe-area-inset-right));
+  bottom: calc(92px + env(safe-area-inset-bottom));
+  z-index: 50;
+  width: min(320px, calc(100vw - 32px));
+  border-color: #b5d37940;
+  box-shadow: 0 12px 36px #0007;
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
+}
+.launch-button:hover + .launch-info,
+.launch-button:focus-visible + .launch-info {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+.launch-info dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  margin: 10px 0 0;
+}
+.launch-info dt {
+  color: var(--muted);
+}
+.launch-info dd {
+  margin: 0;
+  text-align: right;
+}
 .launch-caption {
   display: flex;
   justify-content: center;
@@ -2950,6 +2984,10 @@ svg.corner-loader {
     bottom: calc(16px + env(safe-area-inset-bottom));
     max-width: calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right));
     padding: 15px 20px;
+  }
+  .launch-info {
+    right: calc(16px + env(safe-area-inset-right));
+    bottom: calc(84px + env(safe-area-inset-bottom));
   }
   .app-footer span + span {
     margin-top: 8px;

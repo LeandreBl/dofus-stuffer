@@ -5,6 +5,7 @@ import {
   type Build, type BuildEvaluation, type Catalog, type Constraint, type EquipmentItem, type ExoStat, type ItemCondition,
   type OptimizationRequest, type Slot, type SpellDamage, type Stats,
 } from './index.js';
+import { calculateEquipmentMaluses } from './equipment-maluses.js';
 
 /** A request that can never be searched as given (locked item filtered out, missing prices...). */
 export class SearchConfigurationError extends Error {}
@@ -582,6 +583,43 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
     for (let slot = 0; slot < 16; slot += 1) if (items[slot] >= 0 && slotType(SLOTS[slot]) !== 'dofus') ids.push(eligible[items[slot]].id);
     return `${ids.sort((a, b) => a - b).join('.')}|${exo >= 0 ? [...exoConfigurations[exo]].sort().join('.') : ''}`;
   };
+  // ---- Malus cleanup ---------------------------------------------------------
+  const malusOf = Float64Array.from(eligible, item => calculateEquipmentMaluses(catalog, [item.stats]).penalty);
+  const lighterCache = new Map<number, number[]>();
+  /** Items with at least every bonus of `item` and fewer maluses (Surpryz -> Dofus Turquoise), least malus first. */
+  const lighterThan = (item: number) => {
+    let found = lighterCache.get(item);
+    if (found) return found;
+    const bonuses = Object.entries(eligible[item].stats).filter(([, value]) => value > 0);
+    found = [];
+    for (let other = 0; other < eligible.length; other += 1) {
+      const candidate = eligible[other];
+      if (malusOf[other] >= malusOf[item] || candidate.slotType !== eligible[item].slotType || groupExcluded(candidate)) continue;
+      if (bonuses.every(([name, value]) => (candidate.stats[name] || 0) >= value)) found.push(other);
+    }
+    found.sort((a, b) => malusOf[a] - malusOf[b]);
+    lighterCache.set(item, found);
+    return found;
+  };
+  /** Swaps each item for a lighter-malus equivalent when the exact evaluation stays valid and scores no lower. */
+  function lighten(items: Int32Array, alloc: Int32Array, exo: number, evaluation: BuildEvaluation) {
+    items = items.slice();
+    for (let slot = 0; slot < 16; slot += 1) {
+      const item = items[slot];
+      if (item < 0 || request.filters.lockedSlots[SLOTS[slot]] || !malusOf[item]) continue;
+      // Swapping a set piece would cost its set bonus.
+      if (itemSet[item] >= 0 && items.some((other, index) => index !== slot && other >= 0 && itemSet[other] === itemSet[item])) continue;
+      for (const candidate of lighterThan(item)) {
+        if (isUsed(items, slot, candidate)) continue;
+        items[slot] = candidate;
+        const trial = evaluateBuild(catalog, request, toBuild(items, alloc, exo));
+        if (trial.valid && trial.score >= evaluation.score - 1e-9) { evaluation = trial; break; }
+        items[slot] = item;
+      }
+    }
+    return { evaluation, items };
+  }
+
   /** One exact result per gear set: dofus/trophy variants of the same gear would otherwise fill the list. */
   function offerWinner(items: Int32Array, alloc: Int32Array, exo: number, soft: number) {
     if (winners.size >= MAX_WINNERS && soft <= worstWinner) return;
@@ -591,10 +629,13 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
     const build = toBuild(items, alloc, exo);
     const full = `${gear}|${Object.values(build.slots).join('.')}|${Object.values(build.baseStats || {}).join('.')}`;
     if (rejected.has(full)) return;
-    const evaluation = evaluateBuild(catalog, request, build);
+    let evaluation = evaluateBuild(catalog, request, build);
     if (!evaluation.valid) { if (rejected.size < 10_000) rejected.add(full); return; }
     if (previous && previous.evaluation.score >= evaluation.score) return;
-    winners.set(gear, { evaluation, items: items.slice(), alloc: alloc.slice() });
+    ({ evaluation, items } = lighten(items, alloc, exo, evaluation));
+    const lightGear = gearKey(items, exo);
+    if (lightGear !== gear && (winners.get(lightGear)?.evaluation.score ?? -Infinity) >= evaluation.score) return;
+    winners.set(lightGear, { evaluation, items, alloc: alloc.slice() });
     if (winners.size > MAX_WINNERS) {
       const worst = [...winners.entries()].sort((a, b) => a[1].evaluation.score - b[1].evaluation.score)[0];
       winners.delete(worst[0]);

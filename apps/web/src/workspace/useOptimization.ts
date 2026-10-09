@@ -107,6 +107,7 @@ export function useOptimization({ catalog, setBuild }: {
           evaluated: live.reduce((sum, report) => sum + report.evaluated, 0),
           feasible: live.reduce((sum, report) => sum + report.feasible, 0),
           bestScore: null,
+          rounds: round + 1, islands: live.length,
         },
       });
       snapshot.progress.bestScore = snapshot.results[0]?.score ?? null;

@@ -43,3 +43,31 @@ test('the fast search model scores random real builds exactly like evaluateBuild
   }
   assert.ok(valid > 0, 'the sample contains valid builds');
 });
+
+const lightestResults = (allowedItemIds, constraint) => {
+  // Only one free dofus slot: both items can no longer be worn side by side.
+  const fillers = catalog.items.filter(item => item.category === 'Dofus' && item.level <= 200 && !allowedItemIds.includes(item.id)
+    && !item.conditions && !item.stats[constraint.statKey]).slice(0, 5);
+  const lockedSlots = Object.fromEntries(SLOTS.filter(slot => slotType(slot) === 'dofus').slice(1).map((slot, index) => [slot, fillers[index].id]));
+  allowedItemIds = [...allowedItemIds, ...fillers.map(item => item.id)];
+  const request = {
+    character: { ...defaultCharacter(), level: 200 },
+    constraints: [{ id: 'goal', kind: 'stat', target: 1, relation: 'atLeast', priority: 0, strict: true, ...constraint }],
+    target: defaultTarget(),
+    filters: { excludedItemIds: [], excludedTypeIds: [], excludedCategories: [], lockedSlots, allowedItemIds },
+    prices: { server: 'test', values: {}, ownedItemIds: [], mode: 'total' },
+    seconds: 1,
+  };
+  const search = createSearch(catalog, request, 1);
+  search.run(5_000, 0.5);
+  const { results } = search.snapshot();
+  assert.ok(results.length > 0);
+  return results.map(result => Object.values(result.build.slots));
+};
+
+test('results swap an item for an equivalent with fewer maluses', () => {
+  // Surpryz (10 crit, -1000 initiative) -> Dofus Turquoise (10 crit).
+  for (const ids of lightestResults([22001, 739], { statKey: 'criticalHit', target: 10 })) assert.ok(!ids.includes(22001) || ids.includes(739), `${ids}`);
+  // Voyageur (1 MP, -30/-30 tackle) -> Ratrapry (1 MP, -40 tackle block).
+  for (const ids of lightestResults([13830, 22007], { statKey: 'movementPoints', target: 4 })) assert.ok(!ids.includes(13830) || ids.includes(22007), `${ids}`);
+});

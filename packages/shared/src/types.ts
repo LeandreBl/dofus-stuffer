@@ -313,6 +313,9 @@ export interface JobProgress {
   feasible: number;
   elapsedMs: number;
   bestScore: number | null;
+  /** Browser search: synchronisation rounds done and parallel islands. */
+  rounds?: number;
+  islands?: number;
 }
 export interface JobSnapshot {
   id: string;
