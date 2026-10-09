@@ -1,7 +1,6 @@
 import { createHash } from 'node:crypto';
 import { BlockList, isIP } from 'node:net';
 import type { IncomingMessage } from 'node:http';
-import type { Redis } from 'ioredis';
 import { lookup } from 'node:dns/promises';
 
 type ClientRequest = Pick<IncomingMessage, 'headers' | 'socket'>;
@@ -64,21 +63,15 @@ function ipv6Prefix(address: string): string {
   return full.slice(0, 4).map(value => Number.parseInt(value, 16).toString(16)).join(':');
 }
 
-export const RATE_SCRIPT = `
-local current = tonumber(redis.call('GET', KEYS[1]) or '0')
-local cost = tonumber(ARGV[1])
-if current + cost > tonumber(ARGV[2]) then
-  return {0, redis.call('PTTL', KEYS[1])}
-end
-redis.call('INCRBY', KEYS[1], cost)
-if current == 0 then redis.call('PEXPIRE', KEYS[1], ARGV[3]) end
-return {1, redis.call('PTTL', KEYS[1])}
-`;
+// ponytail: in-process fixed windows, fine for a single API container; a shared store is needed to scale out.
+const windows = new Map<string, { used: number; resetAt: number }>();
 
-const rateKey = (scope: string, identity: string) => `dofus:security:rate:${scope}:${identity}`;
-
-export async function consumeRate(redis: Pick<Redis, 'eval'>, scope: string, identity: string,
-  limit: number, windowMs = 60_000, cost = 1): Promise<boolean> {
-  const result = await redis.eval(RATE_SCRIPT, 1, rateKey(scope, identity), cost, limit, windowMs) as [number, number];
-  return result[0] === 1;
+export function consumeRate(scope: string, identity: string, limit: number, windowMs = 60_000, cost = 1, now = Date.now()): boolean {
+  if (windows.size > 100_000) for (const [key, entry] of windows) if (entry.resetAt <= now) windows.delete(key);
+  const key = `${scope}:${identity}`;
+  let entry = windows.get(key);
+  if (!entry || entry.resetAt <= now) windows.set(key, entry = { used: 0, resetAt: now + windowMs });
+  if (entry.used + cost > limit) return false;
+  entry.used += cost;
+  return true;
 }

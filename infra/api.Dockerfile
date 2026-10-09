@@ -23,10 +23,6 @@ RUN npm ci --omit=dev --ignore-scripts --no-audit --no-fund && npm cache clean -
 COPY --from=build /app/packages/shared/dist packages/shared/dist
 COPY --from=build /app/apps/api/dist apps/api/dist
 COPY data/catalog.json data/catalog.json
-COPY scripts/import-game-data.mjs scripts/refresh-catalog.mjs scripts/equipment-metadata.mjs scripts/
-COPY data/patches data/patches
-COPY data/simulation-limitations.json data/simulation-limitations.json
-RUN mkdir -p /var/lib/dofus-stuffer && chown node:node /var/lib/dofus-stuffer
 USER node
 EXPOSE 3000
 CMD ["node", "apps/api/dist/main.js"]

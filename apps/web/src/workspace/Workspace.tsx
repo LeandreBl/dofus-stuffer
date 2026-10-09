@@ -32,10 +32,8 @@ import { tabTitles } from "./tabs";
 import { Toast } from "./Toast";
 import type { JobSnapshot } from "@dofus/shared";
 import { useCriterionEditor } from "./useCriterionEditor";
-import { useMaintenance } from "./useMaintenance";
 import { useNavigation } from "./useNavigation";
 import { useOptimization } from "./useOptimization";
-import { usePriceSync } from "./usePriceSync";
 import { useToast } from "./useToast";
 import { WorkspaceNotices } from "./WorkspaceNotices";
 
@@ -62,8 +60,6 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
   const [setLink, setSetLink] = useState<{ id: number; key: number }>();
   const { tab, setTab, item, setItem } = useNavigation(catalog);
   const [toast, notify] = useToast();
-  const priceSync = usePriceSync(request.prices.server, catalog.items, setRequest);
-  const maintenance = useMaintenance();
   const criteria = useCriterionEditor(request, setRequest, notify);
   const optimization = useOptimization({ catalog, setBuild });
   const { active } = optimization;
@@ -248,8 +244,6 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
           <MarketTab
             catalog={catalog}
             request={request}
-            priceSync={priceSync}
-            maintenance={maintenance}
             onChange={setRequest}
             onServer={changeServer}
             notify={notify}
@@ -263,6 +257,8 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
         disabled={request.constraints.length === 0 || !characterAllocation.valid}
         withBase={Object.keys(request.filters.lockedSlots).length > 0}
         percent={active ? optimization.job?.progress.percent : undefined}
+        job={optimization.job}
+        statusTitles={statusTitles}
         onLaunch={() => void optimize()}
         onCancel={() => void optimization.cancel()}
       />

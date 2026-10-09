@@ -1,14 +1,7 @@
 const TOKEN_KEY = "dofus-admin-token";
 
-export interface CheckReport { status: string; checkedAt: string; message: string; source?: string; sourceVersion?: string }
 export interface Overview {
-  redis: boolean;
   catalog: { version: string; revision?: string; items: number; spells: number; classes: number; servers: number };
-  maintenance: {
-    running: boolean; cron: string; timezone: string; startedAt?: string; completedAt?: string; message?: string;
-    catalog?: CheckReport; prices?: CheckReport; patch?: CheckReport;
-    latestPatch?: { title: string; url: string; publishedAt?: string; version?: string };
-  };
 }
 
 export class AuthError extends Error {}

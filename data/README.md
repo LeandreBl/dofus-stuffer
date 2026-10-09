@@ -14,7 +14,7 @@ Le [changelog officiel final 3.7](https://www.dofus.com/fr/mmorpg/actualites/maj
 
 ## Réimport reproductible
 
-Le déploiement dispose aussi d'une **vérification hebdomadaire automatique** via les [releases DofusDude](https://github.com/dofusdude/dofus3-main/releases), sans client du jeu installé. `scripts/refresh-catalog.mjs` résout leurs exports Unity et réutilise le normaliseur ci-dessous. Il prépare un candidat isolé ; le service de maintenance le valide avant publication et refuse les retours de version. Les serveurs et les icônes locales déjà disponibles sont conservés ; une nouvelle icône absente utilise un repère neutre jusqu'à une mise à jour des visuels. Les détails sont dans [le guide de maintenance](../docs/MAINTENANCE.md).
+Sans client du jeu installé, `scripts/refresh-catalog.mjs` prépare un catalogue candidat depuis les [releases DofusDude](https://github.com/dofusdude/dofus3-main/releases) : il résout leurs exports Unity et réutilise le normaliseur ci-dessous. Les serveurs et les icônes locales déjà disponibles sont conservés ; une nouvelle icône absente utilise un repère neutre jusqu'à une mise à jour des visuels. Vérifier le candidat avant de remplacer `data/catalog.json`.
 
 Avec Python et UnityPy 1.25.4, exporter les fichiers statiques d'une installation autorisée du jeu. Les chemins suivants sont des arguments à adapter, pas des dépendances de l'application :
 

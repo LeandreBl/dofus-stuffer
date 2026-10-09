@@ -6,15 +6,13 @@
 |---|---|
 | React + Vite | Personnage, critères, priorités, équipements, dégâts, prix, et recherche dans des Web Workers |
 | `@dofus/shared` | Contrats TypeScript, statistiques, validation d'équipement, dégâts, évaluation des critères et moteur de recherche (`@dofus/shared/search`) |
-| NestJS | Catalogue, prix automatiques, état de la maintenance et administration |
-| Maintenance BullMQ | Vérification hebdomadaire des données, prix et dernière note de mise à jour |
-| Redis | File de maintenance et limites de débit |
+| NestJS | Catalogue, limites de débit et administration |
 | Nginx | Distribution du front compilé et des images locales |
 | Traefik | `/api` vers NestJS, le reste vers Nginx |
 
-Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. Après configuration de `.env`, `docker compose up --build -d` construit et démarre les quatre services applicatifs.
+Linux est la plateforme de déploiement principale, avec Docker Engine et le plugin Compose. Après configuration de `.env`, `docker compose up --build -d` construit et démarre les deux services applicatifs.
 
-Le Compose principal réutilise le Traefik existant du VPS : routes HTTPS sur les domaines de `.env` et redirection HTTP, sans nouveau proxy ni port publié. Seuls Nginx et l'API rejoignent son réseau partagé ; Redis utilise un réseau interne distinct. La maintenance dispose d'un réseau de sortie séparé pour les flux HTTPS. Redis exige le mot de passe de `.env`, transmis aux services qui l'utilisent. Les images, ports, origines, ressources et paramètres du proxy sont également dans `.env`. Les conteneurs ont des capacités supprimées et un système de fichiers en lecture seule. Le mode de développement facultatif sélectionne explicitement `compose.local.yaml` pour ajouter un proxy local ; il utilise actuellement le port 8180.
+Le Compose principal réutilise le Traefik existant du VPS : routes HTTPS sur les domaines de `.env` et redirection HTTP, sans nouveau proxy ni port publié. Nginx et l'API rejoignent son réseau partagé. Les images, ports, origines, ressources et paramètres du proxy sont également dans `.env`. Les conteneurs ont des capacités supprimées et un système de fichiers en lecture seule. Le mode de développement facultatif sélectionne explicitement `compose.local.yaml` pour ajouter un proxy local ; il utilise actuellement le port 8180.
 
 ## Flux de recherche
 
@@ -62,26 +60,23 @@ L'évaluation retourne le détail `breakdown` : base, parchotage, équipement, c
 
 ## Persistance et données
 
-- `data/catalog.json` fournit le catalogue de secours versionné. Le snapshot livré est extrait des fichiers statiques du client 3.7.4.4. Le service de maintenance vérifie les exports DofusDude chaque lundi à 03:00 Europe/Paris et au démarrage, ou un flux normalisé configuré. Le déploiement Linux ne dépend pas d'une installation du jeu.
-- Le volume `game-data` conserve catalogue actif, relevés automatiques et rapports de maintenance. Les remplacements sont atomiques et les versions plus anciennes refusées. L'API recharge le catalogue entre les demandes ; sa révision est identifiée par son empreinte.
+- `data/catalog.json` fournit le catalogue de secours versionné. Le snapshot livré est extrait des fichiers statiques du client 3.7.4.4. Le déploiement Linux ne dépend pas d'une installation du jeu.
+- L'API lit le catalogue au démarrage ; sa révision est identifiée par son empreinte.
 - Les images de `apps/web/public/game/` sont intégrées à l'image web.
 - Réglages, stuffs et carnets de prix sont enregistrés dans le navigateur. L'export JSON permet de garder une copie.
 - Les anciens profils passent en répartition automatique par défaut ; le parchotage reste à vérifier séparément. Après un changement de version du catalogue, les équipements sont réévalués avec les nouvelles données.
-- `PRICE_FEED_URL` alimente les prix automatiques par serveur ; aucun fournisseur n'est configuré par défaut. `PriceBook.automaticValues` et `automaticExoCosts` restent distincts des corrections manuelles `values` et `exoCosts`, prioritaires. Le relevé conserve sa date de source ; `updatedAt` du carnet manuel reste la date de modification par l'utilisateur.
-- Les patch notes sont conservées comme titres, liens et extraits. Leurs phrases n'écrasent pas les formules : les changements chiffrés passent par le catalogue structuré validé. Voir [la maintenance](MAINTENANCE.md).
+- Les prix viennent des saisies et imports de l'utilisateur (`PriceBook.values` et `exoCosts`) ; aucun fournisseur automatique n'est branché.
 
 ## Routes
 
 | Interface | Usage |
 |---|---|
-| `GET /api/health` | Redis et version du catalogue |
+| `GET /api/health` | Version du catalogue |
 | `GET /api/catalog` | Catalogue local versionné |
-| `GET /api/maintenance` | Dernière vérification des sources et planification |
-| `GET /api/prices?server=…` | Dernier relevé automatique du serveur |
-| `GET /api/admin/overview`, `POST /api/admin/maintenance/run` | Administration, avec `Authorization: Bearer <ADMIN_TOKEN>` |
+| `GET /api/admin/overview` | Administration, avec `Authorization: Bearer <ADMIN_TOKEN>` |
 
 ## Validation
 
-`npm run build` compile tous les composants. `npm test` exécute les tests du moteur, de sécurité, de maintenance et de recherche. Définir `API_URL` sur l'URL Traefik active les tests réseau contre les services démarrés. Les contrôles de santé Compose vérifient la disponibilité, pas le parcours utilisateur complet. Les limites de débit et en-têtes du navigateur sont décrits dans le [rapport de sécurité](SECURITY_AUDIT.md).
+`npm run build` compile tous les composants. `npm test` exécute les tests du moteur, de sécurité et de recherche. Définir `API_URL` sur l'URL Traefik active les tests réseau contre les services démarrés. Les contrôles de santé Compose vérifient la disponibilité, pas le parcours utilisateur complet. Les limites de débit et en-têtes du navigateur sont décrits dans le [rapport de sécurité](SECURITY_AUDIT.md).
 
 Les limites de simulation figurent dans [le plan](PLAN.md) et les [références de calcul](../data/CALCULATION_NOTES.md). Les prochaines extensions concernent les références vérifiées en jeu, effets spéciaux et rotations, puis les jets personnalisés, overmages et scénarios PvP.

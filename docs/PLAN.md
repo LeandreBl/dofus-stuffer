@@ -41,7 +41,7 @@ Les malus permanents des objets et des bonus actifs de panoplie diminuent automa
 
 ## Catalogue livré
 
-Le snapshot du **client Ankama 3.7.4.4**, importé le 7 octobre 2026, contient 19 classes, 849 sorts jouables et 1 762 rangs, 120 caractéristiques nommées, 3 831 objets et 521 panoplies. Les cinq nouveaux trophées 3.7 sont inclus. Un service de maintenance vérifie chaque semaine les nouvelles données DofusDude et publie un catalogue validé sans retour de version. Il consulte également la dernière note officielle quand son flux est accessible. La connexion à un fournisseur de prix est reportée ; le connecteur est prêt et les saisies/imports manuels restent actifs. Voir [la maintenance](MAINTENANCE.md).
+Le snapshot du **client Ankama 3.7.4.4**, importé le 7 octobre 2026, contient 19 classes, 849 sorts jouables et 1 762 rangs, 120 caractéristiques nommées, 3 831 objets et 521 panoplies. Les cinq nouveaux trophées 3.7 sont inclus. Les prix viennent des saisies et imports manuels.
 
 Le catalogue comprend les sorts de classe, variantes et sorts communs de cette source. Le moteur conserve aussi les sorts internes liés, états et caractéristiques d’invocations. Le calcul porte sur un lancer et une cible, avec les situations choisies dans la fiche ; tous les rangs jouables sont parcourus par les tests de couverture.
 

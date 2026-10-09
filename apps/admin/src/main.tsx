@@ -1,10 +1,9 @@
 import { StrictMode, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { LayoutDashboard, LogOut, Swords, Wrench } from "lucide-react";
+import { LayoutDashboard, LogOut, Swords } from "lucide-react";
 import { api, AuthError, getToken, setToken, type Overview } from "./api";
 import { Button, usePolling } from "./ui";
 import { Dashboard } from "./views/Dashboard";
-import { Manage } from "./views/Manage";
 import "./organic.css";
 import "./admin.css";
 
@@ -18,7 +17,6 @@ document.documentElement.dataset.theme = storedTheme();
 
 const PAGES = {
   dashboard: { label: "Tableau de bord", icon: LayoutDashboard, group: "Surveiller" },
-  manage: { label: "Gestion", icon: Wrench, group: "Configurer" },
 } as const;
 type Page = keyof typeof PAGES;
 const pageFromHash = (): Page => (location.hash.slice(1) in PAGES ? location.hash.slice(1) : "dashboard") as Page;
@@ -118,7 +116,6 @@ function Shell({ onLogout }: { onLogout: (message?: string) => void }) {
         </header>
 
         {!overview.data ? <div className="page text-muted">Chargement…</div>
-          : page === "manage" ? <Manage overview={overview.data} onChange={overview.refresh} onError={onError} />
           : <Dashboard overview={overview.data} />}
       </main>
       {toast ? <div className="card elev-lg toast" role="alert">{toast}</div> : null}

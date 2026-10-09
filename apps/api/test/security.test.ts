@@ -1,25 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { adminEnabled, verifyAdmin } from '../src/security.js';
-import { clientAddress, clientId, proxyTrust } from '../src/abuse-limits.js';
-import { fetchLimited } from '../src/maintenance.js';
-import { redisUrl } from '../src/config.js';
-
-test('Redis passwords from the environment preserve URL punctuation without entering Redis keys', () => {
-  const previousUrl = process.env.REDIS_URL, previousPassword = process.env.REDIS_PASSWORD;
-  process.env.REDIS_URL = 'redis://redis:6379';
-  process.env.REDIS_PASSWORD = 'private:@/#?$ value';
-  try {
-    const url = new URL(redisUrl());
-    assert.equal(url.hostname, 'redis');
-    assert.equal(decodeURIComponent(url.password), process.env.REDIS_PASSWORD);
-    assert.equal(url.pathname, '');
-    assert.equal(url.search, '');
-  } finally {
-    if (previousUrl === undefined) delete process.env.REDIS_URL; else process.env.REDIS_URL = previousUrl;
-    if (previousPassword === undefined) delete process.env.REDIS_PASSWORD; else process.env.REDIS_PASSWORD = previousPassword;
-  }
-});
+import { clientAddress, clientId, consumeRate, proxyTrust } from '../src/abuse-limits.js';
 
 test('Only the configured proxy can supply a client address and the last hop wins', () => {
   const trusted = proxyTrust('172.30.240.2');
@@ -33,13 +15,12 @@ test('Only the configured proxy can supply a client address and the last hop win
   assert.throws(() => proxyTrust('all'));
 });
 
-test('HTTP feeds and redirects that downgrade HTTPS are rejected before fetching them', async () => {
-  const requested: string[] = [];
-  const fetcher = (async (url: string) => { requested.push(url); return new Response(null, { status: 302, headers: { location: 'http://test.invalid/insecure' } }); }) as typeof fetch;
-  await assert.rejects(fetchLimited('http://test.invalid', 1000, fetcher), /HTTPS/);
-  assert.equal(requested.length, 0);
-  await assert.rejects(fetchLimited('https://test.invalid/secure', 1000, fetcher), /HTTPS/);
-  assert.deepEqual(requested, ['https://test.invalid/secure']);
+test('Rate limits are per client and reset after their window', () => {
+  const scope = `test-${Date.now()}`;
+  const attempts = Array.from({ length: 30 }, () => consumeRate(scope, 'one', 20, 60_000, 1, 0));
+  assert.equal(attempts.filter(Boolean).length, 20);
+  assert.equal(consumeRate(scope, 'two', 20, 60_000, 1, 0), true);
+  assert.equal(consumeRate(scope, 'one', 20, 60_000, 1, 60_000), true);
 });
 
 test('Admin access stays closed without a long ADMIN_TOKEN and only accepts that exact bearer', () => {
