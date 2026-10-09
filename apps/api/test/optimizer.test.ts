@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { defaultTarget, type Catalog, type OptimizationRequest } from '@dofus/shared';
-import { optimize, SearchConfigurationError } from '../src/optimizer.js';
+import { optimize, SearchConfigurationError } from './optimize.js';
 
 function fixture(): Catalog {
   return {
@@ -25,7 +25,7 @@ const request = (): OptimizationRequest => ({
   prices: { server: 'test', values: {}, ownedItemIds: [], mode: 'total' }, seconds: 3, seed: 8,
 });
 
-test('Search sacrifices a small desired-stat gain to avoid a large malus on an unrequested stat', async () => {
+test('Search ignores maluses on unrequested stats', async () => {
   const catalog = fixture();
   catalog.sets = [];
   catalog.items = [
@@ -35,9 +35,9 @@ test('Search sacrifices a small desired-stat gain to avoid a large malus on an u
   const input = request();
   input.constraints = [{ id: 'str', kind: 'stat', statKey: 'strength', target: 1000, relation: 'maximize', priority: 0, strict: false }];
   const result = await optimize(catalog, input, { onProgress: async () => true });
-  assert.equal(result.results[0].build.slots.hat, 2);
-  assert.equal(result.results[0].stats.strength, 490);
-  assert.deepEqual(result.results[0].maluses.stats, {});
+  assert.equal(result.results[0].build.slots.hat, 1);
+  assert.equal(result.results[0].stats.strength, 500);
+  assert.deepEqual(result.results[0].maluses.stats, { tackleEvade: -150 });
   assert.ok(result.progress.bestScore! > 0);
 });
 
@@ -52,9 +52,8 @@ test('Search keeps required stats and allows a useful piece with a tiny malus', 
   const input = request();
   input.constraints = [{ id: 'str', kind: 'stat', statKey: 'strength', target: 500, relation: 'atLeast', priority: 0, strict: true }];
   const result = await optimize(catalog, input, { onProgress: async () => true });
-  assert.equal(result.results[0].build.slots.hat, 3);
+  assert.notEqual(result.results[0].build.slots.hat, 2);
   assert.ok(result.results.every(value => value.valid && value.constraints[0].satisfied));
-  assert.equal(result.results[0].maluses.penalty, 0.025);
 });
 
 function criticalSpellCatalog(): Catalog {

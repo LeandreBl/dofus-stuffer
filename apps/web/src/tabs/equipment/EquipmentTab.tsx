@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from "react";
 import { Info, Package } from "lucide-react";
 import type { Build, BuildEvaluation, Catalog, EquipmentItem, JobSnapshot, OptimizationRequest, Slot } from "@dofus/shared";
 import { downloadJson } from "../../lib/files";
+import { stuffFilename } from "../../lib/class-slug";
 import { withEquipmentLocks } from "../../lib/equipment-locks";
 import { BuildChecks } from "./BuildChecks";
 import { BuildView } from "./build/BuildView";
@@ -17,7 +18,7 @@ export function EquipmentTab({
   build: Build;
   evaluation: BuildEvaluation;
   job: JobSnapshot | null;
-  /** A search is queued or running. */
+  /** A search is running. */
   searching: boolean;
   starting: boolean;
   selectedResult: number;
@@ -98,7 +99,7 @@ export function EquipmentTab({
             onBrowse={onBrowse}
             onPriorities={onBuilder}
             onExport={() =>
-              downloadJson("dofus-stuffer-equipement.json", {
+              downloadJson(stuffFilename(catalog, request, evaluation), {
                 version: catalog.version,
                 character: request.character,
                 build,

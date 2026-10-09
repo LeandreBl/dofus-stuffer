@@ -35,8 +35,9 @@ export function getCharacterAllocation(character: Character): CharacterAllocatio
 
 /** A legal starting allocation for search, not a replacement for objective scoring.
  * Preferences are internal search directions; scrolls never consume this budget.
+ * `step` points are bought per greedy move: coarser steps trade precision for speed.
  */
-export function allocateCharacterStats(character: Character, preferredStats: Stats = { vitality: 1 }, minimumStats: Stats = {}): Stats {
+export function allocateCharacterStats(character: Character, preferredStats: Stats = { vitality: 1 }, minimumStats: Stats = {}, step = 1): Stats {
   if (!Number.isInteger(character.level) || character.level < 1 || character.level > 200) return {};
   let remaining = (character.level - 1) * 5;
   // Infeasible minima are not a solution: restart legally and let the exact
@@ -52,13 +53,13 @@ export function allocateCharacterStats(character: Character, preferredStats: Sta
     let bestCost = 0;
     for (const key of preferences) {
       const value = baseStats[key] ?? 0;
-      const cost = characterPointCost(key, value + 1) - characterPointCost(key, value);
+      const cost = characterPointCost(key, value + step) - characterPointCost(key, value);
       if (cost > remaining) continue;
       const gain = (preferredStats[key] > 0 ? preferredStats[key] : 1) / ((100 + value) * cost);
       if (gain > bestGain) { best = key; bestGain = gain; bestCost = cost; }
     }
     if (!best) { baseStats.vitality = (baseStats.vitality ?? 0) + remaining; break; }
-    baseStats[best] = (baseStats[best] ?? 0) + 1;
+    baseStats[best] = (baseStats[best] ?? 0) + step;
     remaining -= bestCost;
   }
   return baseStats;

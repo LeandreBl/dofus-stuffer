@@ -113,7 +113,7 @@ export interface EquipmentSet {
 }
 export interface Catalog {
   version: string;
-  /** Hash of the snapshot used by a queued optimization. */
+  /** Hash of the catalog snapshot: tells saved profiles that the catalog changed. */
   revision?: string;
   fetchedAt: string;
   source: string;
@@ -218,7 +218,6 @@ export interface PriceBook {
   ownedExos?: ExoStat[];
 }
 export interface OptimizationRequest {
-  catalogRevision?: string;
   character: Character;
   constraints: Constraint[];
   target: CombatTarget;
@@ -317,7 +316,7 @@ export interface JobProgress {
 }
 export interface JobSnapshot {
   id: string;
-  status: 'queued' | 'running' | 'completed' | 'cancelled' | 'failed';
+  status: 'running' | 'completed' | 'cancelled' | 'failed';
   createdAt: string;
   updatedAt: string;
   progress: JobProgress;
@@ -327,4 +326,3 @@ export interface JobSnapshot {
   catalogVersion: string;
   catalogRevision?: string;
 }
-export interface JobReceipt { id: string; token: string; status: JobSnapshot['status']; }

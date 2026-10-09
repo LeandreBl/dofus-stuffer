@@ -38,7 +38,37 @@ export function ItemDetail({
   const excludedFromSearch = request.filters.excludedItemIds.includes(item.id);
   const set = catalog.sets.find((entry) => entry.id === item.setId);
   return (
-    <Modal title="Détail de l’objet" onClose={onClose}>
+    <Modal
+      title="Détail de l’objet"
+      onClose={onClose}
+      footer={<>
+        {onRemove && (
+          <button className="button ghost danger" onClick={onRemove}>
+            Retirer
+          </button>
+        )}
+        {onReplace && (
+          <button className="button ghost" onClick={onReplace}>
+            Remplacer
+          </button>
+        )}
+        {onRemove ? (
+          <button className="button primary" onClick={onClose}>
+            Fermer
+          </button>
+        ) : (
+          <button
+            className="button primary"
+            onClick={() => {
+              onEquip(item);
+              onClose();
+            }}
+          >
+            Équiper cet objet
+          </button>
+        )}
+      </>}
+    >
       <div className="item-detail-heading">
         <GameImage src={item.icon} />
         <div>
@@ -75,7 +105,7 @@ export function ItemDetail({
       {!!item.dataWarnings?.length && <div className="notice warning"><Info size={15} /><div>{item.dataWarnings.join(" ")}</div></div>}
       <ItemPriceField item={item} request={request} onChange={onChange} />
       {excludedFromSearch && <p className="inline-notice" role="status">Cet objet est exclu des prochaines recherches du moteur.</p>}
-      <div className="modal-actions item-detail-actions">
+      <div className="item-detail-actions">
         <button
           type="button"
           className="button ghost"
@@ -94,25 +124,6 @@ export function ItemDetail({
         >
           {excludedFromSearch ? <Plus size={14} /> : <CircleSlash size={14} />}
           {excludedFromSearch ? "Retirer l’exclusion" : "Exclure du moteur"}
-        </button>
-        {onRemove && (
-          <button className="button ghost danger" onClick={onRemove}>
-            Retirer
-          </button>
-        )}
-        {onReplace && (
-          <button className="button ghost" onClick={onReplace}>
-            Remplacer
-          </button>
-        )}
-        <button
-          className="button primary"
-          onClick={() => {
-            onEquip(item);
-            onClose();
-          }}
-        >
-          {onRemove ? "Rééquiper" : "Équiper cet objet"}
         </button>
       </div>
     </Modal>

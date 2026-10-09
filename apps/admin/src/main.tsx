@@ -1,10 +1,9 @@
 import { StrictMode, useEffect, useState, type FormEvent } from "react";
 import { createRoot } from "react-dom/client";
-import { LayoutDashboard, ListChecks, LogOut, Search, Swords, Wrench } from "lucide-react";
+import { LayoutDashboard, LogOut, Swords, Wrench } from "lucide-react";
 import { api, AuthError, getToken, setToken, type Overview } from "./api";
 import { Button, usePolling } from "./ui";
 import { Dashboard } from "./views/Dashboard";
-import { Jobs } from "./views/Jobs";
 import { Manage } from "./views/Manage";
 import "./organic.css";
 import "./admin.css";
@@ -19,7 +18,6 @@ document.documentElement.dataset.theme = storedTheme();
 
 const PAGES = {
   dashboard: { label: "Tableau de bord", icon: LayoutDashboard, group: "Surveiller" },
-  jobs: { label: "Recherches", icon: ListChecks, group: "Surveiller" },
   manage: { label: "Gestion", icon: Wrench, group: "Configurer" },
 } as const;
 type Page = keyof typeof PAGES;
@@ -62,7 +60,6 @@ function Login({ onLogin, error }: { onLogin: (token: string) => void; error?: s
 function Shell({ onLogout }: { onLogout: (message?: string) => void }) {
   const [page, setPage] = useState<Page>(pageFromHash);
   const [theme, setTheme] = useState<Theme>(storedTheme);
-  const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string>();
   const overview = usePolling(() => api<Overview>("overview"), 5_000, []);
 
@@ -116,18 +113,11 @@ function Shell({ onLogout }: { onLogout: (message?: string) => void }) {
             <h4>{PAGES[page].label}</h4>
           </div>
           <div className="row push">
-            {page === "jobs" ? (
-              <div className="search">
-                <Search size={16} strokeWidth={2.75} />
-                <input className="input" type="search" placeholder="Classe, identifiant, message…" value={search} onChange={event => setSearch(event.target.value)} />
-              </div>
-            ) : null}
             <Button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>{theme === "dark" ? "Clair" : "Sombre"}</Button>
           </div>
         </header>
 
-        {page === "jobs" ? <Jobs search={search} onError={onError} />
-          : !overview.data ? <div className="page text-muted">Chargement…</div>
+        {!overview.data ? <div className="page text-muted">Chargement…</div>
           : page === "manage" ? <Manage overview={overview.data} onChange={overview.refresh} onError={onError} />
           : <Dashboard overview={overview.data} />}
       </main>

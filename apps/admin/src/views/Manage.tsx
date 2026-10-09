@@ -10,8 +10,7 @@ export function Manage({ overview, onChange, onError }: { overview: Overview; on
   const [notice, setNotice] = useState<string>();
   const { maintenance } = overview;
 
-  const run = async (key: string, path: string, done: string, question?: string) => {
-    if (question && !confirm(question)) return;
+  const run = async (key: string, path: string, done: string) => {
     setBusy(key);
     try { await api(path, "POST"); setNotice(done); onChange(); } catch (error) { onError(error); } finally { setBusy(undefined); }
   };
@@ -20,19 +19,6 @@ export function Manage({ overview, onChange, onError }: { overview: Overview; on
     <div className="page">
       {notice ? <div className="card notice" role="status">{notice}</div> : null}
       <div className="panel-grid">
-        <Panel title="File de recherche" eyebrow={overview.paused ? "En pause" : "Active"}
-          action={<Tag tone={overview.paused ? "accent" : "sage"}>{overview.paused ? "Pause" : "Active"}</Tag>}>
-          <p className="text-muted">
-            La pause empêche les moteurs de démarrer de nouvelles recherches. Les recherches en cours se terminent ;
-            les nouvelles s’accumulent dans la file (100 max) jusqu’à la reprise.
-          </p>
-          <div className="row">
-            {overview.paused
-              ? <Button variant="primary" loading={busy === "resume"} onClick={() => void run("resume", "queue/resume", "File reprise.")}>Reprendre la file</Button>
-              : <Button variant="danger" loading={busy === "pause"} onClick={() => void run("pause", "queue/pause", "File mise en pause.", "Mettre la file en pause ? Aucune nouvelle recherche ne démarrera.")}>Mettre en pause</Button>}
-          </div>
-        </Panel>
-
         <Panel title="Maintenance des données" eyebrow={maintenance.running ? "En cours…" : `Planifiée : ${maintenance.cron} (${maintenance.timezone})`}>
           <p className="text-muted">
             Vérifie le catalogue, les prix et les notes de patch. Dernière exécution : {formatDate(maintenance.completedAt || maintenance.startedAt)}.

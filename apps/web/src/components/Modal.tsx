@@ -7,12 +7,15 @@ export function Modal({
   onClose,
   wide = false,
   icon,
+  footer,
 }: {
   title: string;
   children: ReactNode;
   onClose: () => void;
   wide?: boolean;
   icon?: ReactNode;
+  /** Pinned under the content; only the content scrolls. */
+  footer?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -55,7 +58,7 @@ export function Modal({
     >
       <div
         ref={ref}
-        className={`modal ${wide ? "modal-wide" : ""}`}
+        className={`modal ${wide ? "modal-wide" : ""} ${footer ? "modal-with-footer" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -72,7 +75,8 @@ export function Modal({
             <X size={19} />
           </button>
         </div>
-        {children}
+        {footer ? <div className="modal-body">{children}</div> : children}
+        {footer && <div className="modal-actions modal-footer">{footer}</div>}
       </div>
     </div>
   );

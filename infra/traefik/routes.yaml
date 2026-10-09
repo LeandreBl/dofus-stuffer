@@ -2,7 +2,7 @@ http:
   routers:
     api:
       entryPoints: [web]
-      rule: PathPrefix(`/api`) || PathPrefix(`/socket.io`)
+      rule: PathPrefix(`/api`)
       priority: 100
       service: api
       middlewares: [api-rate, api-connections, compression]

@@ -12,10 +12,10 @@ Application web pour préparer et rechercher des stuffs Dofus PC, avec priorité
 | Simulateur | Comparer dégâts normaux et critiques, résistances, états et effets liés dans une situation choisie |
 | Apparence | Voir le personnage équipé et orientable, rendu en WebGL dans le navigateur avec les ressources du jeu |
 | Prix | Saisir ou importer un carnet par serveur, estimer le coût complet du stuff et les suppléments des exos |
-| Recherche asynchrone | Suivre progression et propositions en direct, arrêter une recherche et retrouver son état après reconnexion |
+| Recherche dans le navigateur | Explorer des millions de combinaisons sur plusieurs cœurs, suivre les propositions en direct et arrêter à tout moment |
 | Données | Utiliser un catalogue livré avec le projet et vérifier automatiquement ses mises à jour chaque semaine |
 
-Le projet est un **monorepo TypeScript avec npm workspaces** : React 19 et Vite pour l'interface, NestJS 11 pour l'API, BullMQ et Redis pour les recherches, Socket.IO pour le suivi en direct. Les calculs sont partagés entre le navigateur et le worker. Le déploiement principal utilise Docker Compose sur Linux.
+Le projet est un **monorepo TypeScript avec npm workspaces** : React 19 et Vite pour l'interface, NestJS 11 pour l'API de données, BullMQ et Redis pour la maintenance. La recherche de stuff tourne dans le navigateur, dans des Web Workers, avec le moteur partagé `@dofus/shared`. Le déploiement principal utilise Docker Compose sur Linux.
 
 **Repères :** [lancement Linux](#lancer-sur-linux) · [utilisation](#utilisation) · [périmètre et limites](#périmètre-et-limites) · [architecture et Graphify](#architecture-et-graphify) · [développement](#développement-et-vérifications) · [organisation](#organisation) · [documentation](#documentation).
 
@@ -33,21 +33,21 @@ Depuis la racine :
 docker compose up --build -d
 ```
 
-Compose démarre **cinq services** : `web`, `api`, `worker`, `maintenance` et `redis`. Il ne lance pas Traefik et ne publie aucun nouveau port. Le front et l'API rejoignent le réseau du proxy existant avec leurs labels de routage. Redis et le worker restent sur un réseau interne distinct. Redis utilise le mot de passe de `.env`, conservé hors du dépôt et des images Docker.
+Compose démarre **quatre services** : `web`, `api`, `maintenance` et `redis`. Il ne lance pas Traefik et ne publie aucun nouveau port. Le front et l'API rejoignent le réseau du proxy existant avec leurs labels de routage. Redis reste sur un réseau interne distinct. Redis utilise le mot de passe de `.env`, conservé hors du dépôt et des images Docker.
 
 `REDIS_URL` doit cibler le nom Redis propre au projet : `redis://${COMPOSE_PROJECT_NAME}-redis:6379`. Ce nom est enregistré uniquement sur le réseau interne et évite qu'une API également reliée à Traefik joigne le Redis d'une autre application. Pour une installation existante utilisant `redis://redis:6379`, modifier cette ligne dans `.env`, puis relancer `docker compose up --build -d` ; les volumes peuvent être conservés.
 
-Avec les domaines fournis, l'interface sera accessible à **https://dofus-stuffer.notdotio.com** et l'API à **https://dofus-stuffer.api.notdotio.com**. Le domaine de l'interface sert aussi `/api` et `/socket.io`. Les labels prévoient HTTPS, la redirection depuis HTTP et HSTS. Le provider Docker de Traefik doit être actif et ses certificats couvrir les domaines de `.env`. Sa mise à jour reste sous le contrôle de l'administrateur du VPS ; le [rapport de sécurité](docs/SECURITY_AUDIT.md) indique la version vérifiée.
+Avec les domaines fournis, l'interface sera accessible à **https://dofus-stuffer.notdotio.com** et l'API à **https://dofus-stuffer.api.notdotio.com**. Le domaine de l'interface sert aussi `/api`. Les labels prévoient HTTPS, la redirection depuis HTTP et HSTS. Le provider Docker de Traefik doit être actif et ses certificats couvrir les domaines de `.env`. Sa mise à jour reste sous le contrôle de l'administrateur du VPS ; le [rapport de sécurité](docs/SECURITY_AUDIT.md) indique la version vérifiée.
 
 Pour contrôler puis arrêter l'application en conservant les volumes :
 
 ```sh
 docker compose ps
-docker compose logs --tail=100 api worker redis
+docker compose logs --tail=100 api maintenance redis
 docker compose down
 ```
 
-Fermer le navigateur ne stoppe pas les conteneurs. Les services redémarrent avec Docker selon `RESTART_POLICY`. Les profils et corrections manuelles de prix sont conservés dans le navigateur ; les recherches côté serveur expirent après 24 heures.
+Fermer le navigateur ne stoppe pas les conteneurs. Les services redémarrent avec Docker selon `RESTART_POLICY`. Les profils et corrections manuelles de prix sont conservés dans le navigateur.
 
 ### Développement local facultatif
 
@@ -119,7 +119,7 @@ La recherche est **heuristique** : elle retourne les meilleurs stuffs trouvés p
 
 ## Actualisation hebdomadaire
 
-Le service `maintenance` vérifie catalogue, prix configurés et dernière note officielle **chaque lundi à 03:00, heure de Paris**, ainsi qu'au démarrage. Le planificateur BullMQ utilise Redis ; aucun cron supplémentaire n'est à installer sur Linux. Le volume `game-data` conserve les résultats, même après reconstruction des images. L'API et les workers relisent les nouveaux catalogues entre les demandes.
+Le service `maintenance` vérifie catalogue, prix configurés et dernière note officielle **chaque lundi à 03:00, heure de Paris**, ainsi qu'au démarrage. Le planificateur BullMQ utilise Redis ; aucun cron supplémentaire n'est à installer sur Linux. Le volume `game-data` conserve les résultats, même après reconstruction des images. L'API relit les nouveaux catalogues entre les demandes.
 
 Les patch notes servent à identifier la dernière publication. Les chiffres sont importés depuis les données structurées du jeu : le texte d'une annonce ne suffit pas à modifier automatiquement une formule ou une mécanique du simulateur. Le flux officiel peut refuser la lecture automatisée ; l'échec est affiché, sans effacer les données existantes.
 
@@ -127,34 +127,33 @@ Configuration, format des prix et vérification manuelle : [guide de maintenance
 
 ## Architecture et Graphify
 
-La cartographie Graphify regroupe notamment l'orchestration de l'interface, les vues du personnage, les critères, l'optimiseur, la validation des requêtes et la maintenance du catalogue. Elle relie le parcours d'une recherche (**API → BullMQ → worker → Redis → Socket.IO**) à ses dimensions d'optimisation (**statistiques, dégâts, critiques, exos et répartition des points**). Le schéma ci-dessous reprend ces relations et les complète avec les services définis dans `compose.yaml` et les dépendances du code.
+La cartographie Graphify regroupe notamment l'orchestration de l'interface, les vues du personnage, les critères, l'optimiseur et la maintenance du catalogue. Elle relie la recherche (**interface → Web Workers → moteur partagé**) à ses dimensions d'optimisation (**statistiques, dégâts, critiques, exos et répartition des points**). Le schéma ci-dessous reprend ces relations et les complète avec les services définis dans `compose.yaml` et les dépendances du code.
 
 ```mermaid
 flowchart LR
-    browser["Navigateur<br/>React + WebGL"] <-->|HTTP et Socket.IO| traefik["Traefik<br/>Point d'entrée"]
+    browser["Navigateur<br/>React + WebGL"] <-->|HTTP| traefik["Traefik<br/>Point d'entrée"]
+    browser <-->|Recherche par îles| islands["Web Workers<br/>Moteur de recherche"]
     traefik -->|Interface et ressources| web["web / Nginx"]
-    traefik <-->|API et événements| api["api / NestJS<br/>Socket.IO"]
-    api <-->|Tâches, états et Pub/Sub| redis["Redis<br/>Files BullMQ"]
-    redis <-->|Recherche et progression| worker["worker<br/>Optimisation"]
+    traefik <-->|Catalogue, prix, admin| api["api / NestJS"]
+    api <-->|Limites de débit, file de maintenance| redis["Redis"]
     maintenance["maintenance<br/>Actualisation des données"] <-->|Planification BullMQ| redis
     maintenance -->|Publication validée| data["Volume game-data<br/>Catalogue et relevés de prix"]
     data -->|Catalogue actif| api
-    data -->|Catalogue actif| worker
-    shared["@dofus/shared<br/>Statistiques, dégâts et contraintes"] -.-> browser
-    shared -.-> worker
+    shared["@dofus/shared<br/>Statistiques, dégâts, contraintes et recherche"] -.-> browser
+    shared -.-> islands
     renderer["@dofus/renderer<br/>Moteur de rendu du personnage"] -.-> browser
 ```
 
-Les flèches en pointillés représentent les modules utilisés par le navigateur et le worker. Compose lance **cinq services** : `web`, `api`, `worker`, `maintenance` et `redis`. Traefik est fourni par le VPS ; le mode local facultatif dispose de son propre proxy. Les deux packages du schéma sont intégrés au code des applications.
+Les flèches en pointillés représentent les modules intégrés au code du navigateur. Compose lance **quatre services** : `web`, `api`, `maintenance` et `redis`. Traefik est fourni par le VPS ; le mode local facultatif dispose de son propre proxy.
 
 ### Du critère au résultat
 
-1. Le navigateur calcule les aperçus immédiatement avec `@dofus/shared`, puis envoie personnage, critères, scénario, prix, exclusions et verrous à `POST /api/jobs`.
-2. L'API valide la demande et le catalogue, crée la tâche BullMQ et renvoie un identifiant accompagné d'un jeton privé d'accès.
-3. Le worker explore plusieurs points de départ, des remplacements de pièces et de panoplies, les allocations de caractéristiques et les exos autorisés. Il évalue les candidats avec les mêmes fonctions que le navigateur et conserve les meilleurs résultats valides.
-4. Le worker enregistre progression et résultats dans Redis. La passerelle Socket.IO relaie les notifications `job:update` ; un abonnement ou une lecture HTTP récupère l'état enregistré après une déconnexion.
+1. Le navigateur calcule les aperçus immédiatement avec `@dofus/shared`.
+2. Au lancement, il démarre jusqu'à quatre Web Workers (« îles ») qui reçoivent le catalogue déjà chargé, les critères, le scénario, les prix, les exclusions et les verrous. Rien n'est envoyé au serveur.
+3. Chaque île mène un recuit simulé sur un modèle vectoriel exact de `evaluateBuild` : remplacements de pièces et de panoplies, allocations de caractéristiques et exos autorisés. Les îles partagent régulièrement leur meilleur stuff.
+4. L'interface fusionne les meilleurs résultats, revalidés par `evaluateBuild`, et applique en direct celui qui est sélectionné.
 
-Le calcul continue lorsque le navigateur se déconnecte. La lecture, l'abonnement et l'annulation exigent le jeton de la recherche, dont seul le hachage est conservé côté serveur. Ces accès et états temporaires expirent après 24 heures. Chaque recherche utilise une révision immuable du catalogue ; une tâche en attente dont la révision a changé doit être relancée.
+Fermer l'onglet arrête la recherche ; les résultats appliqués restent dans le profil.
 
 ### Consulter la cartographie générée
 
@@ -174,11 +173,10 @@ Les principales communautés donnent ces points d'entrée pour explorer le code 
 | `Workspace UI Actions` | [`App.tsx`](apps/web/src/App.tsx) : état du profil, équipement, lancement et annulation |
 | `Constraints & Criteria` | [`Constraints.tsx`](apps/web/src/Constraints.tsx) : objectifs et priorités de recherche |
 | `Character Look Rendering` | [`CharacterPreview.tsx`](apps/web/src/CharacterPreview.tsx) et [`character-look.ts`](apps/web/src/character-look.ts) : apparence et rendu du personnage |
-| `Request Validation` | [`validation.ts`](apps/api/src/validation.ts) : contrôle des paramètres avant recherche |
-| `Build Optimizer` | [`optimizer.ts`](apps/api/src/optimizer.ts), appelé par [`worker.ts`](apps/api/src/worker.ts) : exploration et classement des candidats |
+| `Build Optimizer` | [`search.ts`](packages/shared/src/search.ts), lancé par [`useOptimization.ts`](apps/web/src/workspace/useOptimization.ts) dans des Web Workers : exploration et classement des candidats |
 | `Catalog & Maintenance` | [`maintenance.ts`](apps/api/src/maintenance.ts) et [`catalog.service.ts`](apps/api/src/catalog.service.ts) : actualisation et chargement du catalogue |
 
-Pour les détails des contrats, de la persistance et des calculs : [architecture complète](docs/ARCHITECTURE.md) et [API et moteur de recherche](apps/api/README.md).
+Pour les détails des contrats, de la persistance et des calculs : [architecture complète](docs/ARCHITECTURE.md) et [API](apps/api/README.md).
 
 ## Développement et vérifications
 
@@ -190,21 +188,21 @@ npm run build
 npm test
 ```
 
-La compilation couvre le module partagé, NestJS et React. Les tests couvrent calculs, contraintes, recherche, validation des entrées et accès aux recherches. Les tests réseau sont ignorés tant que `API_URL` n'est pas défini.
+La compilation couvre le module partagé, NestJS et React. Les tests couvrent calculs, contraintes, moteur de recherche, maintenance et sécurité de l'API. Les tests réseau sont ignorés tant que `API_URL` n'est pas défini.
 
-Une fois les services disponibles, activer les tests HTTP/WebSocket avec le port configuré :
+Une fois les services disponibles, activer les tests HTTP avec le port configuré :
 
 ```sh
 API_URL=http://localhost:8080 npm test
 ```
 
-Les contrôles couvrent le parcours HTTP → Redis → worker → WebSocket et les parcours du navigateur : critères, priorités communes, personnage, recherche, mannequin, aperçu des sorts, reconnexion et prix. Le [rapport de vérification](docs/VALIDATION.md) détaille les résultats et leur portée ; ils ne certifient pas toutes les mécaniques du jeu.
+Les contrôles couvrent les routes de données de la stack démarrée. Le [rapport de vérification](docs/VALIDATION.md) détaille les résultats et leur portée ; ils ne certifient pas toutes les mécaniques du jeu.
 
-Pour travailler avec le rechargement du front, `npm run dev:web` lance Vite sur le port 5173. Il attend une API locale sur le port 3000 et lui transmet `/api` et `/socket.io`. L'API et le worker démarrent avec `npm run dev:api`, dans deux terminaux distincts, avec respectivement `ROLE=api` et `ROLE=worker`. Tous deux utilisent le même `REDIS_URL`, par défaut `redis://127.0.0.1:6379`. Redis n'est pas publié sur l'hôte par le Compose standard : ce mode nécessite une instance Redis locale accessible ou une configuration Compose de développement adaptée.
+Pour travailler avec le rechargement du front, `npm run dev:web` lance Vite sur le port 5173. Il attend une API locale sur le port 3000 et lui transmet `/api`. L'API démarre avec `npm run dev:api` et utilise `REDIS_URL`, par défaut `redis://127.0.0.1:6379`. Redis n'est pas publié sur l'hôte par le Compose standard : ce mode nécessite une instance Redis locale accessible ou une configuration Compose de développement adaptée.
 
 ## Panel d'administration
 
-`/admin/` affiche les statistiques des recherches sur 30 jours (lancées, terminées, annulées, échouées, temps de calcul), les recherches en cours avec leur progression, et permet d'arrêter une recherche, de mettre la file en pause et de lancer la maintenance des données. Il est désactivé tant que `ADMIN_TOKEN` (32 caractères minimum, par exemple `openssl rand -base64 32`) n'est pas défini dans `.env`. Les mauvais jetons sont limités à 10 essais par quart d'heure et par adresse. En développement, `npm run dev:admin` lance le panel sur le port 5174 avec la même API locale sur le port 3000.
+`/admin/` affiche l'état de Redis, du catalogue et de la maintenance des données, et permet de lancer cette maintenance. Il est désactivé tant que `ADMIN_TOKEN` (32 caractères minimum, par exemple `openssl rand -base64 32`) n'est pas défini dans `.env`. Les mauvais jetons sont limités à 10 essais par quart d'heure et par adresse. En développement, `npm run dev:admin` lance le panel sur le port 5174 avec la même API locale sur le port 3000.
 
 ## Actualiser les données
 
@@ -216,15 +214,15 @@ npm run data:import -- --local-client-data=data/.cache/local-client.json --expec
 docker compose up --build -d
 ```
 
-L'import lit uniquement les fichiers statiques du jeu et conserve la provenance, les effets, les icônes et les empreintes. Adapter la version attendue lors d'une future mise à jour vérifiée. DofusDB reste une source d'import alternative, mais renvoyait encore la 3.6 lors de cet audit. Les options sont décrites dans [data/README.md](data/README.md). Après un changement de catalogue, les anciennes recherches doivent être relancées et les profils vérifiés.
+L'import lit uniquement les fichiers statiques du jeu et conserve la provenance, les effets, les icônes et les empreintes. Adapter la version attendue lors d'une future mise à jour vérifiée. DofusDB reste une source d'import alternative, mais renvoyait encore la 3.6 lors de cet audit. Les options sont décrites dans [data/README.md](data/README.md). Après un changement de catalogue, les profils doivent être vérifiés.
 
 ## Organisation
 
 | Chemin | Contenu |
 |---|---|
 | `apps/web/` | Interface React, profils locaux et icônes du jeu |
-| `apps/api/` | API NestJS, Socket.IO, file BullMQ et worker |
-| `packages/shared/` | Contrats, dégâts, statistiques et évaluation des contraintes |
+| `apps/api/` | API NestJS (catalogue, prix, administration) et service de maintenance |
+| `packages/shared/` | Contrats, dégâts, statistiques, évaluation des contraintes et moteur de recherche |
 | `packages/renderer/` | Moteur WebGL du personnage, avec provenance et références amont |
 | `data/` | Catalogue versionné, provenance, effets et cas de référence |
 | `infra/` et `compose.yaml` | Images Docker, Nginx et routage Traefik |
@@ -240,7 +238,7 @@ L'import lit uniquement les fichiers statiques du jeu et conserve la provenance,
 |---|---|
 | [Plan produit](docs/PLAN.md) | Comprendre les parcours, les choix fonctionnels et les prochaines extensions |
 | [Architecture](docs/ARCHITECTURE.md) | Suivre les services, les flux de recherche, les contrats et la persistance |
-| [API et moteur de recherche](apps/api/README.md) | Intégrer les routes HTTP, les événements Socket.IO et les paramètres du worker |
+| [API](apps/api/README.md) | Intégrer les routes HTTP et configurer le service |
 | [Maintenance](docs/MAINTENANCE.md) | Configurer les mises à jour, les flux de prix et les vérifications manuelles |
 | [Catalogue et provenance](data/README.md) | Reproduire un import, connaître les sources et leurs limites |
 | [Références de calcul](data/CALCULATION_NOTES.md) | Examiner les conventions de simulation et les cas de référence |
@@ -251,8 +249,8 @@ L'import lit uniquement les fichiers statiques du jeu et conserve la provenance,
 ## Dépannage Linux
 
 ```sh
-docker compose logs --tail=100 api worker redis
+docker compose logs --tail=100 api maintenance redis
 curl https://dofus-stuffer.api.notdotio.com/api/health
 ```
 
-Le point de santé doit indiquer `redis: true` et au moins un `worker`. Adapter le port à `.env`. Si Docker ne répond pas, vérifier que son service est démarré et que l'utilisateur dispose des droits pour l'utiliser. Les fichiers de configuration sont chargés directement par Compose ; les fins de ligne sont fixées à LF par `.gitattributes`.
+Le point de santé doit indiquer `redis: true`. Adapter le port à `.env`. Si Docker ne répond pas, vérifier que son service est démarré et que l'utilisateur dispose des droits pour l'utiliser. Les fichiers de configuration sont chargés directement par Compose ; les fins de ligne sont fixées à LF par `.gitattributes`.

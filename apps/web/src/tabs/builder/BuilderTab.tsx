@@ -55,7 +55,7 @@ export function BuilderTab({ catalog, request, build, evaluation, saved, searchi
             <strong>Ton ordre, tes choix.</strong>
             <br />
             Une cible obligatoire doit être respectée. Pour le reste, le
-            moteur cherche le meilleur compromis selon tes priorités et limite les malus, même sur les caractéristiques sans objectif.
+            moteur cherche le meilleur compromis selon tes priorités ; les malus sur les caractéristiques sans objectif sont ignorés.
           </p>
         </div>
       </aside>

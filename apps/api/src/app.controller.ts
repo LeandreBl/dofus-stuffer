@@ -1,25 +1,18 @@
-import { Body, Controller, Get, Header, Headers, HttpCode, HttpException, Inject, Param, Post, Query, Req, ServiceUnavailableException } from '@nestjs/common';
+import { Controller, Get, Header, HttpException, Inject, Query, ServiceUnavailableException } from '@nestjs/common';
 import { CatalogService } from './catalog.service.js';
-import { JobsService } from './jobs.service.js';
 import { RedisService } from './redis.service.js';
-import { validateRequest } from './validation.js';
 import { getMaintenanceStatus, getServerPrices } from './maintenance.js';
-import { clientAddress, clientId, consumeRate, refundRate } from './abuse-limits.js';
-import type { IncomingMessage } from 'node:http';
-import { bearerToken } from './security.js';
 
 @Controller()
 export class AppController {
-  constructor(@Inject(CatalogService) private readonly catalog: CatalogService, @Inject(RedisService) private readonly redis: RedisService,
-    @Inject(JobsService) private readonly jobs: JobsService) {}
+  constructor(@Inject(CatalogService) private readonly catalog: CatalogService, @Inject(RedisService) private readonly redis: RedisService) {}
 
   @Get('health')
   @Header('Cache-Control', 'no-store')
   async health() {
     try {
       const ping = await this.redis.client.ping();
-      const workers = await this.jobs.queue.getWorkersCount();
-      return { status: ping === 'PONG' ? 'ok' : 'degraded', redis: ping === 'PONG', workers,
+      return { status: ping === 'PONG' ? 'ok' : 'degraded', redis: ping === 'PONG',
         catalogVersion: this.catalog.data.version, items: this.catalog.data.items.length, spells: this.catalog.data.spells.length };
     } catch { throw new ServiceUnavailableException({ status: 'unavailable', redis: false }); }
   }
@@ -40,42 +33,5 @@ export class AppController {
     const prices = getServerPrices(server), ids = new Set(catalog.items.map(item => String(item.id)));
     prices.values = Object.fromEntries(Object.entries(prices.values).filter(([id]) => ids.has(id)));
     return prices;
-  }
-
-  @Post('jobs')
-  @Header('Cache-Control', 'no-store')
-  async create(@Body() body: unknown, @Req() request: IncomingMessage) {
-    const identity = clientId(clientAddress(request));
-    let permitted: boolean;
-    try { permitted = await consumeRate(this.redis.client, 'create', identity, 20); }
-    catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
-    if (!permitted) throw new HttpException('Trop de recherches. Réessayez dans une minute.', 429);
-    const catalog = this.catalog.data;
-    const input = validateRequest(body, catalog);
-    try { permitted = await consumeRate(this.redis.client, 'compute', identity, 1_800, 600_000, input.seconds); }
-    catch { throw new ServiceUnavailableException('Le contrôle des recherches est temporairement indisponible.'); }
-    if (!permitted) throw new HttpException('Budget de calcul atteint. Réessayez dans quelques minutes.', 429);
-    try { return await this.jobs.create(input, catalog, identity); }
-    catch (error) {
-      // A refused admission (full queue, too many active jobs) must not burn compute budget.
-      await refundRate(this.redis.client, 'compute', identity, input.seconds).catch(() => {});
-      throw error;
-    }
-  }
-
-  @Get('jobs/:id')
-  @Header('Cache-Control', 'no-store')
-  snapshot(@Param('id') id: string, @Headers('authorization') authorization: unknown) { return this.jobs.snapshot(id, bearerToken(authorization)); }
-
-  @Get('jobs/:id/queue')
-  @Header('Cache-Control', 'no-store')
-  queue(@Param('id') id: string, @Headers('authorization') authorization: unknown) { return this.jobs.queueStatus(id, bearerToken(authorization)); }
-
-  @Post('jobs/:id/cancel')
-  @HttpCode(200)
-  @Header('Cache-Control', 'no-store')
-  cancel(@Param('id') id: string, @Body() body: unknown, @Headers('authorization') authorization: unknown) {
-    const token = body && typeof body === 'object' ? (body as { token?: unknown }).token : undefined;
-    return this.jobs.cancel(id, bearerToken(authorization) || token);
   }
 }

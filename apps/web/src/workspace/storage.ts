@@ -6,7 +6,6 @@ import {
   type Build,
   type Catalog,
   type Constraint,
-  type JobReceipt,
   type OptimizationRequest,
   type PriceBook,
   type Slot,
@@ -24,7 +23,6 @@ export type SavedState = {
   request: OptimizationRequest;
   build: Build;
   priceBooks: Record<string, PriceBook>;
-  receipt: JobReceipt | null;
 };
 
 export function initialState(catalog: Catalog): SavedState {
@@ -64,7 +62,6 @@ export function initialState(catalog: Catalog): SavedState {
     request,
     build: { slots: {} },
     priceBooks: {},
-    receipt: null,
   };
   let stored: unknown;
   try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null"); } catch { /* A corrupted save starts a fresh workspace. */ }
@@ -92,7 +89,6 @@ export function restoreState(catalog: Catalog, stored: any, fallback: SavedState
     const exosUpdated = stored.version < 4;
     if (exosUpdated) {
       try { localStorage.setItem(`${STORAGE_KEY}.before-global-exos`, JSON.stringify(stored)); } catch { /* The current profile can still be migrated when storage is full. */ }
-      stored.receipt = null;
     }
     const validItems = new Map(catalog.items.map((item) => [item.id, item]));
     stored.build.slots = validSlots(catalog, stored.build.slots);
@@ -110,12 +106,10 @@ export function restoreState(catalog: Catalog, stored: any, fallback: SavedState
     if (!stored.request.character.allocationMode) {
       stored.request.character.allocationMode = "automatic";
       stored.build.baseStats ??= { ...stored.request.character.baseStats };
-      stored.receipt = null;
     }
     const catalogUpdated = stored.catalogVersion !== catalog.version || (!!stored.catalogRevision && stored.catalogRevision !== catalog.revision);
     if (catalogUpdated) {
       try { localStorage.setItem(`${STORAGE_KEY}.before-catalog-update`, JSON.stringify(stored)); } catch { /* Keep using the profile even when backup storage is unavailable. */ }
-      stored.receipt = null;
     }
     stored.request.filters.excludedItemIds = stored.request.filters.excludedItemIds.filter((id: number) => validItems.has(id));
     if (Array.isArray(stored.request.filters.allowedItemIds)) stored.request.filters.allowedItemIds = stored.request.filters.allowedItemIds.filter((id: number) => validItems.has(id));
@@ -134,7 +128,8 @@ export function restoreState(catalog: Catalog, stored: any, fallback: SavedState
     delete stored.build.exos;
     delete stored.request.filters.lockedExos;
     delete stored.request.initialBuild;
-    if (stored.request.prices.mode === "remaining") stored.receipt = null;
+    // Server-side search receipts from before browser search.
+    delete stored.receipt;
     const migratePrices = (book: Record<string, unknown>) => {
       delete book.exoValues;
       delete book.ownedExoKeys;
@@ -166,7 +161,7 @@ export function validSlots(catalog: Catalog, slots: unknown): Partial<Record<Slo
 }
 
 /** Saves the workspace in this browser; false when storage is unavailable or full. */
-export function saveWorkspace(catalog: Catalog, state: Pick<SavedState, "request" | "build" | "priceBooks" | "receipt">): boolean {
+export function saveWorkspace(catalog: Catalog, state: Pick<SavedState, "request" | "build" | "priceBooks">): boolean {
   try {
     localStorage.setItem(
       STORAGE_KEY,

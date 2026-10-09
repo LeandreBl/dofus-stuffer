@@ -60,6 +60,7 @@ services:
       - web-node-modules:/app/node_modules
       - web-app-node-modules:/app/apps/web/node_modules
       - web-api-node-modules:/app/apps/api/node_modules
+      - web-admin-node-modules:/app/apps/admin/node_modules
       - web-shared-dist:/app/packages/shared/dist
     mem_limit: 1g
     labels:
@@ -68,6 +69,7 @@ volumes:
   web-node-modules:
   web-app-node-modules:
   web-api-node-modules:
+  web-admin-node-modules:
   web-shared-dist:
 networks:
   existing-proxy:

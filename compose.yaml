@@ -31,7 +31,6 @@ services:
         NGINX_IMAGE: ${NGINX_IMAGE:?}
     environment:
       WEB_PORT: ${WEB_PORT:?}
-      CSP_CONNECT_SOURCES: ${CSP_CONNECT_SOURCES:?}
     restart: ${RESTART_POLICY:?}
     mem_limit: ${WEB_MEMORY_LIMIT:?}
     cpus: ${WEB_CPUS:?}
@@ -64,7 +63,6 @@ services:
       <<: *api-environment
       PORT: ${API_PORT:?}
       TRUSTED_PROXY_HOSTS: ${TRAEFIK_PROXY_HOST:?}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:?}
       ADMIN_TOKEN: ${ADMIN_TOKEN-}
       ROLE: api
     volumes:
@@ -85,7 +83,7 @@ services:
     labels:
       traefik.enable: "true"
       traefik.docker.network: ${TRAEFIK_NETWORK:?}
-      traefik.http.routers.dofus-stuffer-api.rule: Host(`${PUBLIC_API_HOST:?}`) || (Host(`${PUBLIC_APP_HOST:?}`) && (PathPrefix(`/api`) || PathPrefix(`/socket.io`)))
+      traefik.http.routers.dofus-stuffer-api.rule: Host(`${PUBLIC_API_HOST:?}`) || (Host(`${PUBLIC_APP_HOST:?}`) && PathPrefix(`/api`))
       traefik.http.routers.dofus-stuffer-api.entrypoints: ${TRAEFIK_HTTPS_ENTRYPOINT:?}
       traefik.http.routers.dofus-stuffer-api.priority: ${API_ROUTER_PRIORITY:?}
       traefik.http.routers.dofus-stuffer-api.tls: "true"
@@ -97,25 +95,6 @@ services:
       traefik.http.middlewares.dofus-stuffer-rate.ratelimit.burst: ${API_RATE_BURST:?}
       traefik.http.middlewares.dofus-stuffer-connections.inflightreq.amount: ${API_INFLIGHT_LIMIT:?}
       traefik.http.middlewares.dofus-stuffer-compression.compress: "true"
-  worker:
-    <<: *security
-    image: ${API_IMAGE:?}
-    build: *api-build
-    environment:
-      <<: *api-environment
-      ROLE: worker
-      WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:?}
-      MAX_CANDIDATES: ${MAX_CANDIDATES:?}
-    volumes:
-      - game-data:/var/lib/dofus-stuffer:ro
-    depends_on:
-      redis:
-        condition: service_healthy
-    cpus: ${WORKER_CPUS:?}
-    mem_limit: ${WORKER_MEMORY_LIMIT:?}
-    stop_grace_period: ${WORKER_STOP_GRACE_PERIOD:?}
-    restart: ${RESTART_POLICY:?}
-    networks: [database]
   maintenance:
     <<: *security
     image: ${API_IMAGE:?}

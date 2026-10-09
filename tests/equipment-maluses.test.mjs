@@ -11,17 +11,14 @@ const request = () => ({ character: { classId: 9, level: 200, allocationMode: 'm
   prices: { server: native.servers[0], values: {}, ownedItemIds: [], mode: 'total' }, seconds: 3 });
 const catalog = (items, sets = []) => ({ ...native, items, sets });
 
-test('large losses outside objectives outweigh a small desired-stat gain, but a tiny malus does not', () => {
-  const data = catalog([item(1, { strength: 500, tackleEvade: -150 }), item(2, { strength: 490 }), item(3, { strength: 500, agility: -1 })]);
+test('maluses outside objectives are reported but never lower the score', () => {
+  const data = catalog([item(1, { strength: 500, tackleEvade: -150 }), item(2, { strength: 490 })]);
   const input = request();
   const harmful = evaluateBuild(data, input, { slots: { hat: 1 } });
-  const balanced = evaluateBuild(data, input, { slots: { hat: 2 } });
-  const tiny = evaluateBuild(data, input, { slots: { hat: 3 } });
-  assert.ok(balanced.score > harmful.score);
-  assert.ok(tiny.score > balanced.score);
-  assert.equal(harmful.valid, true, 'A malus is a preference, not an equipment prohibition.');
-  assert.equal(harmful.constraints[0].score, 1 / 3);
-  assert.equal(harmful.maluses.penalty, 75);
+  const clean = evaluateBuild(data, input, { slots: { hat: 2 } });
+  assert.ok(harmful.score > clean.score);
+  assert.equal(harmful.valid, true);
+  assert.deepEqual(harmful.maluses.stats, { tackleEvade: -150 });
 });
 
 test('permanent malus lines remain counted when other gear, scrolls and allocation compensate them', () => {
@@ -66,7 +63,7 @@ test('malus severity is progressive, normalized by stat, and independent of the 
   assert.deepEqual(once.maluses.stats, { damagePercent: -200 }, 'Power loss is not charged once per element.');
 });
 
-test('negative effects never relax mandatory minima, and no-objective searches still prefer fewer maluses', () => {
+test('negative effects never relax mandatory minima, and maluses never score', () => {
   const data = catalog([item(1, { strength: 500, tackleEvade: -150 }), item(2, { strength: 490 })]);
   const input = request();
   input.constraints = [{ ...input.constraints[0], target: 500, relation: 'atLeast', strict: true }];
@@ -74,7 +71,7 @@ test('negative effects never relax mandatory minima, and no-objective searches s
   assert.equal(evaluateBuild(data, input, { slots: { hat: 2 } }).valid, false);
   input.constraints = [];
   assert.equal(evaluateBuild(data, input, { slots: { hat: 2 } }).score, 0);
-  assert.equal(evaluateBuild(data, input, { slots: { hat: 1 } }).score, -75);
+  assert.equal(evaluateBuild(data, input, { slots: { hat: 1 } }).score, 0);
 });
 
 test('positive resistance and utility bonuses, technical fields and non-finite input do not create maluses', () => {

@@ -942,7 +942,8 @@ select {
   border-radius: 999px;
   box-shadow: 0 12px 36px #0007, 0 0 0 4px #151d17b3;
 }
-.button.launch-button:disabled {
+.button.launch-button:disabled,
+.button.launch-button.running {
   opacity: 1;
   background: linear-gradient(90deg, #7d9450 var(--progress, 0%), #596443 var(--progress, 0%));
   color: #d7e0ca;
@@ -1429,86 +1430,32 @@ select {
   padding-top: 18px;
   border-top: 1px solid #ffffff08;
 }
-.item-detail-actions {
+.modal-with-footer {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 -26px;
+  padding: 0 26px;
+}
+.modal-footer {
+  flex-shrink: 0;
+  margin-top: 0;
   flex-wrap: wrap;
 }
-.item-detail-actions > :first-child {
-  flex-basis: 100%;
+.item-detail-actions {
+  margin-top: 18px;
+}
+.item-detail-actions > button {
+  width: 100%;
   justify-content: center;
 }
 .modal-wide {
   width: 750px;
-}
-/* Pinned to the bottom of the screen: only the track shows, details on hover. */
-.progress-dock {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 40;
-  padding-top: 10px;
-  outline: none;
-}
-.progress-dock .progress-track {
-  height: 6px;
-  margin: 0;
-  border-radius: 0;
-}
-.progress-dock .progress-fill {
-  border-radius: 0;
-}
-.progress-card {
-  position: absolute;
-  left: calc(16px + env(safe-area-inset-left));
-  bottom: 14px;
-  width: min(560px, calc(100vw - 32px));
-  border-color: #b5d37940;
-  box-shadow: 0 12px 36px #0007;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(6px);
-  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
-}
-.progress-dock:hover .progress-card,
-.progress-dock:focus-within .progress-card,
-.progress-dock.open .progress-card {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
-}
-.progress-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 15px;
-}
-.progress-head h3 {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-}
-.progress-head h3 svg {
-  color: var(--accent);
-}
-.progress-track {
-  height: 5px;
-  background: #35402e;
-  border-radius: 5px;
-  overflow: hidden;
-  margin: 19px 0 11px;
-}
-.progress-fill {
-  height: 100%;
-  background: var(--accent);
-  transition: width 0.3s;
-  border-radius: 5px;
-}
-.progress-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  font-size: 11px;
-  color: var(--muted);
 }
 .results-tabs {
   display: flex;
@@ -3015,12 +2962,6 @@ svg.corner-loader {
   }
   .stat-input-grid {
     grid-template-columns: 1fr 1fr;
-  }
-  .progress-meta {
-    font-size: 10px;
-  }
-  .progress-head h3 {
-    font-size: 12px;
   }
   .priority-row {
     gap: 6px;

@@ -77,11 +77,11 @@ export function BuildView({
         {actions}
       </div>
       <aside className="build-side">
-        <BuildPrice catalog={catalog} build={evaluation.build} prices={request.prices} onPrices={onPrices} onSlot={onSlot} />
+        <ObjectivesPanel catalog={catalog} constraints={request.constraints} evaluation={evaluation} />
         <CompatibilityPanel catalog={catalog} build={evaluation.build} diagnostics={diagnostics} onSlot={onSlot} />
         <ResistancesPanel catalog={catalog} stats={evaluation.stats} />
         <ActiveSetsPanel catalog={catalog} evaluation={evaluation} />
-        <ObjectivesPanel catalog={catalog} constraints={request.constraints} evaluation={evaluation} />
+        <BuildPrice catalog={catalog} build={evaluation.build} prices={request.prices} onPrices={onPrices} onSlot={onSlot} />
       </aside>
     </div>
   );

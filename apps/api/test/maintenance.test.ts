@@ -8,8 +8,7 @@ import { atomicJson, catalogRevision, compareVersions } from '../src/maintenance
 import { DEFAULT_CRON, DEFAULT_TIMEZONE, parsePatchFeed, runMaintenance, type MaintenanceOptions } from '../src/maintenance.js';
 import { validateCatalog, validatePrices } from '../src/maintenance-validation.js';
 import { loadCatalog } from '../src/catalog.service.js';
-import { validateRequest } from '../src/validation.js';
-import { optimize } from '../src/optimizer.js';
+import { optimize } from './optimize.js';
 
 const catalog: Catalog = { version: '3.7.4.4', fetchedAt: '2026-10-07T00:00:00.000Z', source: 'test',
   classes: [{ id: 1, name: 'Cra', icon: '' }], stats: [{ id: 10, key: 'strength', name: 'Force', category: 'Base' }],
@@ -102,14 +101,10 @@ test('automatic prices make strict budget searches feasible and explicit manual 
     filters: { excludedItemIds: [], excludedTypeIds: [], excludedCategories: [], lockedSlots: { hat: 1 }, allowedExos: ['actionPoints'], maxExos: 1 },
     prices: { server: 'Test', mode: 'total', values: {}, ownedItemIds: [], automaticValues: { '1': 100 }, automaticExoCosts: { actionPoints: 25 } },
     target: { percent: {}, flat: {}, criticalResistance: 0, distance: 'ranged' }, seconds: 3, seed: 1 };
-  const parsed = validateRequest(request, catalog);
-  const result = await optimize(catalog, parsed, { onProgress: async () => false });
+  const result = await optimize(catalog, request, { onProgress: async () => false });
   assert.ok(result.results.length); assert.ok(result.results.every(r => r.cost !== null && r.cost <= 150));
   const free = await optimize(catalog, { ...request, prices: { ...request.prices, values: { '1': 0 }, exoCosts: { actionPoints: 0 } } }, { onProgress: async () => false });
   assert.ok(free.results.every(r => r.cost === 0));
-  const revision = catalogRevision(catalog);
-  assert.equal(validateRequest({ ...request, catalogRevision: revision }, { ...catalog, revision }).catalogRevision, revision);
-  assert.throws(() => validateRequest({ ...request, catalogRevision: '0'.repeat(64) }, { ...catalog, revision }));
 });
 
 test('older price observation cannot replace newer prices', async () => {

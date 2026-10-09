@@ -9,9 +9,6 @@ import { RedisService } from './redis.service.js';
 if (process.env.ROLE === 'maintenance') {
   const { startMaintenance } = await import('./maintenance.js');
   await startMaintenance();
-} else if (process.env.ROLE === 'worker') {
-  const { startWorker } = await import('./worker.js');
-  await startWorker();
 } else {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { bodyParser: false });
   // The proxy container may not resolve yet at boot; the periodic refresh picks it up.

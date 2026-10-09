@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
-import { ArrowRight, LoaderCircle, WandSparkles } from "lucide-react";
+import { ArrowRight, LoaderCircle, Square, WandSparkles } from "lucide-react";
 
-export function LaunchButton({ starting, active, disabled, withBase, percent, onLaunch }: {
+export function LaunchButton({ starting, active, disabled, withBase, percent, onLaunch, onCancel }: {
   starting: boolean;
   active: boolean;
   disabled: boolean;
@@ -10,20 +10,21 @@ export function LaunchButton({ starting, active, disabled, withBase, percent, on
   /** Progress of the running search, filled into the button. */
   percent?: number;
   onLaunch: () => void;
+  onCancel: () => void;
 }) {
   const busy = starting || active;
   return (
     <button
-      className="button primary launch-button"
-      disabled={busy || disabled}
-      onClick={onLaunch}
+      className={`button primary launch-button${active ? " running" : ""}`}
+      disabled={starting || (!active && disabled)}
+      onClick={active ? onCancel : onLaunch}
       style={percent === undefined ? undefined : { "--progress": `${Math.max(0, Math.min(100, percent))}%` } as CSSProperties}
     >
-      {busy ? <LoaderCircle className="spin" size={18} /> : <WandSparkles size={18} />}
+      {starting ? <LoaderCircle className="spin" size={18} /> : active ? <Square size={14} /> : <WandSparkles size={18} />}
       {starting
         ? "Démarrage…"
         : active
-          ? "Recherche en cours"
+          ? "Arrêter la recherche"
           : withBase
             ? "Relancer avec ma base"
             : "Trouver mon stuff"}

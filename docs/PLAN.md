@@ -49,7 +49,7 @@ Les objets représentent les meilleurs jets naturels. Les exos PA/PM sont des bo
 
 ## Simulateur et équipement
 
-Le calcul immédiat s'exécute dans le navigateur à partir du module partagé avec le worker. Il produit les dégâts minimums, moyens et maximums en normal et critique, leur espérance et les dégâts par PA. Le scénario précise résistances et distance.
+Le calcul immédiat s'exécute dans le navigateur à partir du module partagé avec le moteur de recherche. Il produit les dégâts minimums, moyens et maximums en normal et critique, leur espérance et les dégâts par PA. Le scénario précise résistances et distance.
 
 La vue d'équipement présente les emplacements autour d'un personnage portant les objets équipés, les statistiques et les bonus de panoplie. Les exos PA/PM y sont modifiables librement ; le maximum et les types autorisés de l'atelier s'appliquent uniquement à la recherche. Les conditions d'objets et les plafonds restent visibles après les modifications. Le prix estimé indique le serveur, les exos, les achats restants ou les prix manquants. L'onglet des sorts permet de cliquer sur leurs icônes pour ouvrir les détails, sans sélection d'une créature nommée.
 
@@ -61,13 +61,11 @@ Les règles couvrent les doublons d'anneaux de panoplie, les doublons de Dofus/t
 
 Pour les sorts à bonus différé pris en charge, la projection indique le résultat d'un lancement initial puis d'un unique lancement au tour choisi, sans lancer intermédiaire. Une rotation complète devra suivre buffs, charges, états, relances, PA disponibles et changements de cible dans un moteur d'état.
 
-Les états, effets périodiques, invocations et sources de dégâts se règlent dans la fiche de chaque sort. Les runes et tirages aléatoires ont leurs choix propres. La situation est conservée dans l’objectif et évaluée par le worker. Une action inconnue dans un futur catalogue ne doit pas satisfaire un seuil obligatoire. Les arrondis et résistances nécessitent des références supplémentaires vérifiées en jeu avant une certification générale du moteur.
+Les états, effets périodiques, invocations et sources de dégâts se règlent dans la fiche de chaque sort. Les runes et tirages aléatoires ont leurs choix propres. La situation est conservée dans l’objectif et évaluée par le moteur de recherche. Une action inconnue dans un futur catalogue ne doit pas satisfaire un seuil obligatoire. Les arrondis et résistances nécessitent des références supplémentaires vérifiées en jeu avant une certification générale du moteur.
 
 ## Recherche en temps réel
 
-L'API valide la demande et la place dans BullMQ. Un worker séparé explore les équipements autorisés, construit plusieurs candidats et les améliore par remplacements, y compris des changements de panoplie. Il réutilise les calculs et conserve plusieurs résultats valides.
-
-Le worker enregistre résultats et progression dans Redis, puis publie une notification. La passerelle Socket.IO s'abonne à Redis et transmet les mises à jour aux navigateurs suivant la recherche. Une reconnexion restitue l'état enregistré ; la fin du calcul ne dépend pas de la présence d'un navigateur connecté.
+La recherche tourne dans le navigateur, sans aller-retour serveur. Plusieurs Web Workers (« îles ») mènent chacun un recuit simulé sur un modèle vectoriel exact de l'évaluateur partagé : remplacements de pièces, changements de panoplie, répartition des points et exos. Les îles échangent régulièrement leur meilleur stuff et l'interface affiche en direct les meilleurs résultats valides, revalidés par l'évaluateur exact.
 
 Le temps de recherche est borné et l'annulation conserve les solutions trouvées. Le résultat s'intitule « meilleur stuff trouvé » : l'heuristique ne démontre pas l'optimalité globale. Une absence de résultat n'est pas une preuve d'impossibilité.
 
@@ -86,12 +84,12 @@ Une alimentation automatique dépendra d'une source vérifiée, datée et adapt�
 | Socle applicatif | Compilation React/NestJS, lancement Compose et archive de la maquette |
 | Catalogue et légalité | Références d'emplacements, doublons, prérequis, panoplies, exclusions et objets imposés |
 | Calcul direct | Tests normaux/critiques, jets, bonus, cibles et relances ; confrontation aux valeurs du client Dofus |
-| Recherche complète | HTTP → file → worker → Redis → WebSocket ; arrêt, reconnexion, fin et erreurs |
+| Recherche complète | Îles Web Workers, progression en direct, arrêt, fin et erreurs |
 | Ergonomie | Parcours réels et contrôle visuel sur ordinateur et écran étroit, au clic et au clavier |
 | Qualité de recherche | Comparaison exhaustive sur petits catalogues et mesure du gain selon la durée |
 | Extension PvM | Plus de mécaniques, effets passifs, jets personnalisés et rotations multi-tours |
 | PvP et marché | Scénarios dédiés et connexion à une source de prix si disponible |
 
-Le test interne HTTP/Redis/WebSocket et la disponibilité depuis l'hôte ont été vérifiés pendant l'intégration. La réussite de ces contrôles ne remplace ni les tests visuels ni les références de dégâts en jeu.
+La recherche dans le navigateur et la disponibilité de l'API depuis l'hôte ont été vérifiées pendant l'intégration. La réussite de ces contrôles ne remplace ni les tests visuels ni les références de dégâts en jeu.
 
 Les décisions conservées sont : Dofus PC, PvM d'abord, priorités ordonnées sans poids visibles, égalités explicites, prix comme critère, exigences strictes distinctes, calcul immédiat au front et recherche longue au backend. L'[architecture](ARCHITECTURE.md) décrit leur mise en œuvre.

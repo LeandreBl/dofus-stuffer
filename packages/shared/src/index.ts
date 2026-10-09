@@ -153,7 +153,7 @@ function checkCondition(condition: ItemCondition, stats: Stats): boolean {
   if (condition.kind === 'stat' && condition.stat) return compare(finite(stats[condition.stat]), condition.operator, condition.value ?? 0);
   return false;
 }
-function scoreCriterion(constraint: Constraint, value: number | null): { satisfied: boolean; score: number } {
+export function scoreCriterion(constraint: Constraint, value: number | null): { satisfied: boolean; score: number } {
   if (value === null || !Number.isFinite(value)) return { satisfied: false, score: 0 };
   const scale = Math.max(1, Math.abs(constraint.target));
   if (constraint.relation === 'atLeast') return { satisfied: value >= constraint.target, score: Math.max(0, Math.min(1, 1 + (value - constraint.target) / scale)) };
@@ -303,7 +303,8 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
     denominator += weight;
   });
   const maluses = calculateEquipmentMaluses(catalog, [...items.map(item => item.stats), ...sets.map(set => set.stats)]);
-  const score = (denominator ? 100 * numerator / denominator : 0) - maluses.penalty;
+  // Maluses are shown, not scored: an objective stat lost already lowers its own objective.
+  const score = denominator ? 100 * numerator / denominator : 0;
   const breakdown: BuildEvaluation['breakdown'] = {};
   for (const key of new Set([...Object.keys(stats), ...Object.keys(baseStats), ...Object.keys(scrollStats), ...Object.keys(equipmentStats)])) {
     breakdown[key] = {

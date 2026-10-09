@@ -82,10 +82,3 @@ export async function consumeRate(redis: Pick<Redis, 'eval'>, scope: string, ide
   const result = await redis.eval(RATE_SCRIPT, 1, rateKey(scope, identity), cost, limit, windowMs) as [number, number];
   return result[0] === 1;
 }
-
-/** Gives back budget consumed by a request that was refused afterwards. */
-export async function refundRate(redis: Pick<Redis, 'eval'>, scope: string, identity: string, cost: number): Promise<void> {
-  // Only an existing window is refunded, so an expired key never comes back without a TTL.
-  await redis.eval("if redis.call('EXISTS', KEYS[1]) == 1 then redis.call('DECRBY', KEYS[1], ARGV[1]) end return 1",
-    1, rateKey(scope, identity), cost);
-}

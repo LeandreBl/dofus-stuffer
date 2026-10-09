@@ -29,7 +29,7 @@ import { parseProfile, parseStuff } from "./profile-transfer";
 import { initialState, saveWorkspace, STORAGE_KEY } from "./storage";
 import { tabTitles } from "./tabs";
 import { Toast } from "./Toast";
-import { JobProgress, statusTitles } from "../tabs/equipment/JobProgress";
+import type { JobSnapshot } from "@dofus/shared";
 import { useCriterionEditor } from "./useCriterionEditor";
 import { useMaintenance } from "./useMaintenance";
 import { useNavigation } from "./useNavigation";
@@ -37,6 +37,13 @@ import { useOptimization } from "./useOptimization";
 import { usePriceSync } from "./usePriceSync";
 import { useToast } from "./useToast";
 import { WorkspaceNotices } from "./WorkspaceNotices";
+
+const statusTitles: Record<JobSnapshot["status"], string> = {
+  running: "On explore les combinaisons",
+  completed: "Recherche terminée",
+  cancelled: "Recherche arrêtée",
+  failed: "La recherche a rencontré un problème",
+};
 
 export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; onProfileImported: () => void }) {
   const [initial] = useState(() => initialState(catalog));
@@ -57,17 +64,8 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
   const priceSync = usePriceSync(request.prices.server, catalog.items, setRequest);
   const maintenance = useMaintenance();
   const criteria = useCriterionEditor(request, setRequest, notify);
-  const optimization = useOptimization({ catalog, initialReceipt: initial.receipt, setBuild, setCatalogUpdated });
-  const { receipt, active } = optimization;
-  // Tell once per search when it cannot start right away.
-  const queueNotified = useRef("");
-  useEffect(() => {
-    const { job, queue } = optimization;
-    if (!job || !queue || queueNotified.current === job.id || queue.ahead === null) return;
-    queueNotified.current = job.id;
-    if (queue.ahead > 0 || queue.active >= queue.workers)
-      notify(`Ta recherche est en file d’attente (${queue.ahead + 1}e position). Survole la barre de progression pour suivre la file.`);
-  }, [optimization.job, optimization.queue, notify]);
+  const optimization = useOptimization({ catalog, setBuild });
+  const { active } = optimization;
   const evaluation = useMemo(
     () => evaluateBuild(catalog, manualBuildRequest(request), build),
     [catalog, request, build],
@@ -82,8 +80,8 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
   const closeHelp = useCallback(() => setHelp(false), []);
 
   useEffect(() => {
-    setSaved(saveWorkspace(catalog, { request, build, priceBooks, receipt }));
-  }, [request, build, priceBooks, receipt, catalog]);
+    setSaved(saveWorkspace(catalog, { request, build, priceBooks }));
+  }, [request, build, priceBooks, catalog]);
 
   function changeServer(server: string) {
     setPriceBooks((previous) => ({ ...previous, [request.prices.server]: request.prices }));
@@ -137,19 +135,10 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
     }
     setError("");
     try {
-      await optimization.start({ ...request, catalogRevision: catalog.revision, initialBuild: { ...build, baseStats: request.character.allocationMode === "automatic" ? build.baseStats : undefined, exoBonuses: (build.exoBonuses || []).filter((exo) => request.filters.allowedExos?.includes(exo)).slice(0, request.filters.maxExos ?? 2) } });
+      await optimization.start(request);
       setTab("equipment");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Impossible de démarrer la recherche.");
-    }
-  }
-  async function cancel() {
-    if (!receipt) return;
-    try {
-      await optimization.cancel();
-      notify("Arrêt demandé. Les meilleurs résultats seront conservés.");
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "Impossible d’arrêter la recherche.");
     }
   }
   async function profileImport() {
@@ -159,7 +148,7 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       const restored = parseProfile(catalog, await file.text(), initial);
       if (!window.confirm("Remplacer ton profil actuel (priorités, stuff et prix) par celui du fichier ?")) return;
       // Saved first, then the workspace remounts from it like on a page load.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...restored, receipt: null }));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(restored));
       onProfileImported();
     } catch {
       setError("Ce fichier n’est pas un profil Dofus Stuffer valide.");
@@ -289,18 +278,8 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
         withBase={Object.keys(request.filters.lockedSlots).length > 0}
         percent={active ? optimization.job?.progress.percent : undefined}
         onLaunch={() => void optimize()}
+        onCancel={() => void optimization.cancel()}
       />
-      {optimization.job && (
-        <JobProgress
-          job={optimization.job}
-          queue={optimization.queue}
-          active={active}
-          connected={optimization.connected}
-          starting={optimization.starting}
-          onCancel={() => void cancel()}
-          onRestart={() => void optimize()}
-        />
-      )}
       {criteria.editing && (
         <ConstraintEditor
           criterion={criteria.editing}
@@ -355,7 +334,7 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       {help && <HelpModal onClose={closeHelp} />}
       {toast && <Toast message={toast} />}
       {optimization.finished && (
-        <Toast className="search-done" message={statusTitles[optimization.finished]} onClose={optimization.dismissFinished} />
+        <Toast className="search-done" message={optimization.job?.error || statusTitles[optimization.finished]} onClose={optimization.dismissFinished} />
       )}
     </>
   );
