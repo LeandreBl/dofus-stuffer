@@ -8,7 +8,6 @@ export default function App() {
   const [catalog, setCatalog] = useState<Catalog | null>(null);
   const [error, setError] = useState("");
   const [attempt, setAttempt] = useState(0);
-  const [profile, setProfile] = useState(0);
   useEffect(() => {
     let cancelled = false;
     setError("");
@@ -25,6 +24,5 @@ export default function App() {
     };
   }, [attempt]);
   if (!catalog) return <CatalogStatus error={error} onRetry={() => setAttempt((value) => value + 1)} />;
-  // An imported profile is saved first; the bumped key remounts the workspace from it.
-  return <Workspace key={profile} catalog={catalog} onProfileImported={() => setProfile((value) => value + 1)} />;
+  return <Workspace catalog={catalog} />;
 }

@@ -1,12 +1,5 @@
 import { getCharacterAllocation, type Build, type Catalog, type Character } from "@dofus/shared";
-import { restoreState, validSlots, type SavedState } from "./storage";
-
-/** Profile file contents, validated and migrated like a saved workspace; throws when it is not one. */
-export function parseProfile(catalog: Catalog, text: string, fallback: SavedState): SavedState {
-  const restored = restoreState(catalog, JSON.parse(text), fallback);
-  if (!restored) throw new Error("Ce fichier n’est pas un profil Dofus Stuffer valide.");
-  return restored;
-}
+import { validSlots } from "./storage";
 
 /** Stuff file contents restricted to this catalog; throws when no item remains. */
 export function parseStuff(catalog: Catalog, text: string, character: Character): { build: Build; ignored: number } {

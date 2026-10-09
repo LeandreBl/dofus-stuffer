@@ -68,8 +68,8 @@ export function initialState(catalog: Catalog): SavedState {
   return restoreState(catalog, stored, fallback) ?? fallback;
 }
 
-/** Validates and migrates a saved or imported profile; null when it is not one. */
-export function restoreState(catalog: Catalog, stored: any, fallback: SavedState): SavedState | null {
+/** Validates and migrates a saved profile; null when it is not one. */
+function restoreState(catalog: Catalog, stored: any, fallback: SavedState): SavedState | null {
   try {
     if (
       ![2, 3, 4].includes(stored?.version) ||

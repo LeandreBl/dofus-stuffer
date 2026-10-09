@@ -13,6 +13,7 @@ import { ItemDetail } from "../items/ItemDetail";
 import { chooseSlot } from "../items/slots";
 import { manualBuildRequest } from "../lib/build-preview";
 import { downloadJson, pickFile } from "../lib/files";
+import { stuffFilename } from "../lib/class-slug";
 import { urlParam } from "../lib/url";
 import { BuilderTab } from "../tabs/builder/BuilderTab";
 import { EquipmentTab } from "../tabs/equipment/EquipmentTab";
@@ -25,8 +26,8 @@ import { HelpModal } from "./HelpModal";
 import { ItemBrowserModal } from "./ItemBrowserModal";
 import { LaunchButton } from "./LaunchButton";
 import { PageHeading } from "./PageHeading";
-import { parseProfile, parseStuff } from "./profile-transfer";
-import { initialState, saveWorkspace, STORAGE_KEY } from "./storage";
+import { parseStuff } from "./profile-transfer";
+import { initialState, saveWorkspace } from "./storage";
 import { tabTitles } from "./tabs";
 import { Toast } from "./Toast";
 import type { JobSnapshot } from "@dofus/shared";
@@ -45,7 +46,7 @@ const statusTitles: Record<JobSnapshot["status"], string> = {
   failed: "La recherche a rencontré un problème",
 };
 
-export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; onProfileImported: () => void }) {
+export function Workspace({ catalog }: { catalog: Catalog }) {
   const [initial] = useState(() => initialState(catalog));
   const [request, setRequest] = useState(initial.request);
   const [build, setBuild] = useState<Build>(initial.build);
@@ -141,19 +142,6 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       setError(cause instanceof Error ? cause.message : "Impossible de démarrer la recherche.");
     }
   }
-  async function profileImport() {
-    const file = await pickFile();
-    if (!file) return;
-    try {
-      const restored = parseProfile(catalog, await file.text(), initial);
-      if (!window.confirm("Remplacer ton profil actuel (priorités, stuff et prix) par celui du fichier ?")) return;
-      // Saved first, then the workspace remounts from it like on a page load.
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(restored));
-      onProfileImported();
-    } catch {
-      setError("Ce fichier n’est pas un profil Dofus Stuffer valide.");
-    }
-  }
   async function stuffImport() {
     const file = await pickFile();
     if (!file) return;
@@ -167,21 +155,20 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
       setError("Ce fichier ne contient pas de stuff Dofus Stuffer valide.");
     }
   }
-  const profileExport = () =>
-    downloadJson("dofus-stuffer-profil.json", {
-      version: 4,
-      catalogVersion: catalog.version,
-      catalogRevision: catalog.revision,
-      request,
+  const stuffExport = () =>
+    downloadJson(stuffFilename(catalog, request, evaluation), {
+      version: catalog.version,
+      character: request.character,
       build,
-      priceBooks: { ...priceBooks, [request.prices.server]: request.prices },
+      stats: evaluation.stats,
+      constraints: request.constraints,
     });
 
   return (
     <>
       <AppHeader tab={tab} onTab={setTab} />
       <main className="workspace">
-        <PageHeading title={tabTitles[tab]} onExport={profileExport} onImport={() => void profileImport()} onHelp={() => setHelp(true)} />
+        <PageHeading title={tabTitles[tab]} onExport={stuffExport} onImport={() => void stuffImport()} onHelp={() => setHelp(true)} />
         <WorkspaceNotices
           catalog={catalog}
           error={error}
@@ -227,7 +214,6 @@ export function Workspace({ catalog, onProfileImported }: { catalog: Catalog; on
               else setBrowser({ slot });
             }}
             onBrowse={() => setBrowser({})}
-            onImport={() => void stuffImport()}
             onBuilder={() => setTab("builder")}
             onSpells={() => setTab("spells")}
             onPrices={() => setTab("market")}

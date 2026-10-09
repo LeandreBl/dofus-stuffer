@@ -1,6 +1,6 @@
 import type { Catalog } from "@dofus/shared";
 
-/** Known servers plus the current one, which may come from an imported profile. */
+/** Known servers plus the current one, which may come from an old saved profile. */
 export function ServerSelect({ id, catalog, server, onChange }: {
   id?: string;
   catalog: Catalog;

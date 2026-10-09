@@ -1,8 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { Info, Package } from "lucide-react";
 import type { Build, BuildEvaluation, Catalog, EquipmentItem, JobSnapshot, OptimizationRequest, Slot } from "@dofus/shared";
-import { downloadJson } from "../../lib/files";
-import { stuffFilename } from "../../lib/class-slug";
 import { withEquipmentLocks } from "../../lib/equipment-locks";
 import { BuildChecks } from "./BuildChecks";
 import { BuildView } from "./build/BuildView";
@@ -11,7 +9,7 @@ import { StuffActions } from "./StuffActions";
 
 export function EquipmentTab({
   catalog, request, build, evaluation, job, searching, starting, selectedResult,
-  setRequest, setBuild, notify, onSelectResult, onSlot, onBrowse, onImport, onBuilder, onSpells, onPrices,
+  setRequest, setBuild, notify, onSelectResult, onSlot, onBrowse, onBuilder, onSpells, onPrices,
 }: {
   catalog: Catalog;
   request: OptimizationRequest;
@@ -28,7 +26,6 @@ export function EquipmentTab({
   onSelectResult: (index: number) => void;
   onSlot: (slot: Slot, item?: EquipmentItem) => void;
   onBrowse: () => void;
-  onImport: () => void;
   onBuilder: () => void;
   onSpells: () => void;
   onPrices: () => void;
@@ -98,16 +95,6 @@ export function EquipmentTab({
           <StuffActions
             onBrowse={onBrowse}
             onPriorities={onBuilder}
-            onExport={() =>
-              downloadJson(stuffFilename(catalog, request, evaluation), {
-                version: catalog.version,
-                character: request.character,
-                build,
-                stats: evaluation.stats,
-                constraints: request.constraints,
-              })
-            }
-            onImport={onImport}
           />
         }
         onExo={(exo, enabled) => {
