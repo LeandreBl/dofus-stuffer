@@ -1,4 +1,5 @@
 import type { Catalog, Element, SpellDamage } from "@dofus/shared";
+import { MoreButton } from "../../components/MoreButton";
 import { SearchField } from "../../components/SearchField";
 import { StatIcon } from "../../components/StatIcon";
 import { elementKeys, elementNames } from "./damage";
@@ -101,15 +102,7 @@ export function Grimoire({ catalog, characterLevel, grimoire, damages }: {
           </div>
         )}
       </div>
-      {spells.length > limit && (
-        <button className="button ghost more-button" onClick={() => setLimit((value) => value + 100)}>
-          Afficher plus de sorts
-        </button>
-      )}
-      <p className="pagination-summary">
-        {Math.min(limit, spells.length)} / {spells.length} sorts · variantes
-        incluses
-      </p>
+      <MoreButton shown={limit} total={spells.length} label="Chargement des sorts" summary="sorts · variantes incluses" onMore={() => setLimit((value) => value + 100)} />
     </section>
   );
 }

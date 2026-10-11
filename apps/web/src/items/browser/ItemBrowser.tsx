@@ -102,7 +102,7 @@ export function ItemBrowser({
           ))}
         </div>
         {!visibleSets.length && <div className="empty-state"><Shield size={22} /><p>Aucune panoplie trouvée pour ces filtres et ce niveau.</p></div>}
-        <MoreButton shown={limit} total={visibleSets.length} label="Afficher plus de panoplies" summary="panoplies" onMore={() => setLimit((value) => value + 48)} />
+        <MoreButton shown={limit} total={visibleSets.length} label="Chargement des panoplies" summary="panoplies" onMore={() => setLimit((value) => value + 48)} />
       </> : <>
         {typeId !== "all" && (
           <button className="button small ghost" onClick={() => onChange(toggleTypeExclusion(request, Number(typeId)))}>
@@ -135,7 +135,7 @@ export function ItemBrowser({
             <p>Aucun objet trouvé pour ces filtres et ce niveau.</p>
           </div>
         )}
-        <MoreButton shown={limit} total={items.length} label="Afficher plus d’objets" summary="objets · jets maximums du catalogue" onMore={() => setLimit((value) => value + 48)} />
+        <MoreButton shown={limit} total={items.length} label="Chargement des objets" summary="objets · jets maximums du catalogue" onMore={() => setLimit((value) => value + 48)} />
       </>}
     </>
   );

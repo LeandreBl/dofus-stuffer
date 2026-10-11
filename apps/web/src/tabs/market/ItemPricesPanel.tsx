@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Search } from "lucide-react";
 import type { Catalog, PriceBook } from "@dofus/shared";
+import { MoreButton } from "../../components/MoreButton";
 import { SearchField } from "../../components/SearchField";
-import { fmt } from "../../lib/format";
 import { ItemPriceCard } from "./ItemPriceCard";
 
 const PAGE = 24;
@@ -69,14 +69,7 @@ export function ItemPricesPanel({ catalog, prices, effectiveValues, onPrices }: 
           <p>{onlyKnown ? "Aucun prix renseigné pour cette recherche." : "Aucun objet trouvé."}</p>
         </div>
       )}
-      {items.length > limit && (
-        <button className="button ghost more-button" onClick={() => setLimit((value) => value + 36)}>
-          Afficher plus d’objets
-        </button>
-      )}
-      <p className="pagination-summary">
-        {Math.min(limit, items.length)} / {fmt(items.length)} objets
-      </p>
+      <MoreButton shown={limit} total={items.length} label="Chargement des objets" summary="objets" onMore={() => setLimit((value) => value + 36)} />
     </section>
   );
 }
