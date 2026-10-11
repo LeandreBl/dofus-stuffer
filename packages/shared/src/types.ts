@@ -201,7 +201,11 @@ export interface Constraint {
   turnOffset?: number;
   scenario?: SpellScenario;
 }
-export interface Build { slots: Partial<Record<Slot, number>>; exoBonuses?: ExoStat[]; baseStats?: Stats; }
+export interface Build {
+  slots: Partial<Record<Slot, number>>; exoBonuses?: ExoStat[]; baseStats?: Stats;
+  /** Hand-entered equipment stats (forgemagic, …); ignored by the search. */
+  extraStats?: Stats;
+}
 export interface PriceBook {
   server: string;
   /** Manual overrides always take precedence over the server feed. */

@@ -51,7 +51,7 @@ export function EquipmentTab({
           searching={searching}
           onSelect={(index, result) => {
             onSelectResult(index);
-            setBuild(result.build);
+            setBuild((previous) => ({ ...result.build, extraStats: previous.extraStats }));
           }}
         />
       )}
@@ -97,6 +97,7 @@ export function EquipmentTab({
             onPriorities={onBuilder}
           />
         }
+        onExtraStats={(extraStats) => setBuild((previous) => ({ ...previous, extraStats }))}
         onExo={(exo, enabled) => {
           setBuild((previous) => ({ ...previous, exoBonuses: enabled ? [...new Set([...(previous.exoBonuses || []), exo])] : (previous.exoBonuses || []).filter((value) => value !== exo) }));
         }}

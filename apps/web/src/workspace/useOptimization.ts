@@ -49,8 +49,10 @@ export function useOptimization({ catalog, setBuild }: {
   const apply = (results: BuildEvaluation[]) => {
     if (!results.length) return;
     const index = Math.min(selectedRef.current, results.length - 1);
-    const live = results[index].build;
-    setBuild((previous) => (JSON.stringify(previous) === JSON.stringify(live) ? previous : live));
+    setBuild((previous) => {
+      const live = { ...results[index].build, extraStats: previous.extraStats };
+      return JSON.stringify(previous) === JSON.stringify(live) ? previous : live;
+    });
     setSelectedResult(index);
   };
 

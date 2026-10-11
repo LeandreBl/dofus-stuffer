@@ -187,6 +187,7 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
     if (!request.filters.allowedExos?.includes(exo)) violations.push(`Le bonus exotique ${exo === 'actionPoints' ? 'PA' : 'PM'} n’est pas autorisé dans cette recherche.`);
     equipmentStats[exo] = 1;
   }
+  addStats(equipmentStats, build.extraStats ?? {});
   const used = new Set<number>();
   for (const [slot, id] of Object.entries(build.slots)) {
     if (!id) continue;
@@ -320,5 +321,5 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
     equipment: finite(equipmentStats.hitPoints) + finite(equipmentStats.vitality),
     derived: 0, power: 0, total: stats.hitPoints,
   };
-  return { build: { slots: { ...build.slots }, exoBonuses, ...(request.character.allocationMode === 'automatic' ? { baseStats: { ...character.baseStats } } : {}) }, stats, cost, knownCost, missingPrices, missingExoPrices, sets, constraints, score, maluses, valid: violations.length === 0, violations, warnings: [...warnings], breakdown, characterPoints };
+  return { build: { slots: { ...build.slots }, exoBonuses, ...(build.extraStats ? { extraStats: { ...build.extraStats } } : {}), ...(request.character.allocationMode === 'automatic' ? { baseStats: { ...character.baseStats } } : {}) }, stats, cost, knownCost, missingPrices, missingExoPrices, sets, constraints, score, maluses, valid: violations.length === 0, violations, warnings: [...warnings], breakdown, characterPoints };
 }

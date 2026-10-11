@@ -3194,3 +3194,7 @@ button.item-card-set:hover {
   border-color: var(--accent);
   color: #111;
 }
+.extra-stats .stats-list:not(:empty) { margin-bottom: 12px; }
+.extra-stats .allocation-stepper { width: 104px; }
+.extra-stats .item-stat-filters { margin: 12px 0 0; }
+.extra-stats .item-stat-filters .stat-tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }

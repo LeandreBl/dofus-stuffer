@@ -1,11 +1,12 @@
 import { useMemo, type ReactNode } from "react";
-import { inspectEquipment, type BuildEvaluation, type Catalog, type EquipmentItem, type ExoStat, type OptimizationRequest, type Slot } from "@dofus/shared";
+import { inspectEquipment, type BuildEvaluation, type Catalog, type EquipmentItem, type ExoStat, type OptimizationRequest, type Slot, type Stats } from "@dofus/shared";
 import { manualBuildRequest } from "../../../lib/build-preview";
 import { ActiveSetsPanel } from "./ActiveSetsPanel";
 import { BaseStatsTable } from "./BaseStatsTable";
 import { BuildPrice } from "./BuildPrice";
 import { CompatibilityPanel } from "./CompatibilityPanel";
 import { EquipmentPanel } from "./EquipmentPanel";
+import { ExtraStatsPanel } from "./ExtraStatsPanel";
 import { ObjectivesPanel } from "./ObjectivesPanel";
 import { ResistancesPanel } from "./ResistancesPanel";
 import { StatsPanel } from "./StatsPanel";
@@ -19,6 +20,7 @@ export function BuildView({
   onPrices,
   onClear,
   onExo,
+  onExtraStats,
   onLock,
   onLockAll,
   onUnlockAll,
@@ -33,6 +35,7 @@ export function BuildView({
   onPrices: () => void;
   onClear: () => void;
   onExo: (exo: ExoStat, enabled: boolean) => void;
+  onExtraStats: (stats: Stats) => void;
   onLock: (slot: Slot) => void;
   onLockAll: () => void;
   onUnlockAll: () => void;
@@ -75,6 +78,7 @@ export function BuildView({
           onUnlockAll={onUnlockAll}
         />
         {actions}
+        <ExtraStatsPanel catalog={catalog} stats={evaluation.build.extraStats || {}} onChange={onExtraStats} />
       </div>
       <aside className="build-side">
         <ObjectivesPanel catalog={catalog} constraints={request.constraints} evaluation={evaluation} />

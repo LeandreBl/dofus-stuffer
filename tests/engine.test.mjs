@@ -15,6 +15,12 @@ test('an explicitly empty allowed-item list forbids equipped items in front and 
   assert.equal(evaluateBuild({ ...catalog, items: [item] }, input, { slots: {} }).valid, true);
 });
 
+test('hand-entered extra stats count as equipment stats', () => {
+  const evaluation = evaluateBuild(catalog, request(), { slots: {}, extraStats: { strength: 40 } });
+  assert.equal(evaluation.stats.strength - (evaluateBuild(catalog, request(), { slots: {} }).stats.strength ?? 0), 40);
+  assert.equal(evaluation.breakdown.strength.equipment, 40);
+});
+
 test('direct elemental damage distinguishes critical damage from critical probability', () => {
   const damage = calculateSpellDamage(directSpell, { strength: 100, allDamageBonus: 5, criticalDamageBonus: 10, criticalHit: 30 });
   assert.deepEqual(damage.normal, { min: 25, average: 27, max: 29 });
