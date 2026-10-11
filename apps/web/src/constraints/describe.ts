@@ -23,5 +23,5 @@ export function constraintTarget(criterion: Constraint): string {
   if ((criterion.kind === "spell" || criterion.kind === "weapon") && criterion.metric === "criticalChance") {
     return `${relation}${["maximize", "minimize"].includes(criterion.relation) ? "" : ` ${fmt(criterion.target)} %`} · chance de critique`;
   }
-  return `${relation}${["maximize", "minimize"].includes(criterion.relation) ? "" : ` ${criterion.kind === "price" ? money(criterion.target) : fmt(criterion.target)}`}${criterion.kind === "spell" || criterion.kind === "weapon" ? ` · ${criterion.mode === "critical" ? "critique" : "normal"} · ${(criterion.metric || "average") === "average" ? "moyenne" : criterion.metric === "max" ? "jet max." : "jet min."}${criterion.kind === "spell" && criterion.turnOffset ? ` · T+${criterion.turnOffset}` : ""}` : ""}`;
+  return `${relation}${["maximize", "minimize"].includes(criterion.relation) ? "" : ` ${criterion.kind === "price" ? money(criterion.target) : fmt(criterion.target)}`}${criterion.kind === "spell" || criterion.kind === "weapon" ? ` · ${criterion.mode === "critical" ? "critique" : "normal"} · ${(criterion.metric || "average") === "average" ? "moyenne" : criterion.metric === "max" ? "jet max." : "jet min."}${criterion.kind === "spell" && criterion.turnOffset ? ` · tour ${criterion.turnOffset + 1}` : ""}` : ""}`;
 }

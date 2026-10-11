@@ -25,7 +25,7 @@ export function ConstraintFields({ draft, onChange, ...context }: EditorContext 
         <p className="inline-notice">Maximum du personnage : <strong>{fmt(statMaximum)}{statUnit(stat) === "%" ? " %" : ` ${stat?.name || ""}`}</strong>. Les bonus au-delà de ce plafond n’augmentent pas la valeur effective.</p>
       )}
       {criticalChance && <CriticalChanceNotice draft={draft} {...context} />}
-      {damageCriterion && !criticalChance && <DamageRollOptions draft={draft} update={update} />}
+      {damageCriterion && !criticalChance && <DamageRollOptions draft={draft} update={update} catalog={context.catalog} characterLevel={context.characterLevel} />}
       {numeric && (
         <div className="check-field">
           <ShieldCheck size={18} color="#bfd583" />
