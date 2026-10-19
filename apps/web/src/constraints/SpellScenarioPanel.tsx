@@ -8,7 +8,7 @@ const controls: Record<string,{label:string;presets:number[];initial:number;max:
   targetErodedHp:{label:'PV érodés de la cible',presets:[0,500,1000,2000],initial:0,max:1000000},
   targetHp:{label:'PV actuels de la cible',presets:[1000,4000,10000],initial:4000,max:1000000},
   targetHpPercent:{label:'PV restants de la cible (%)',presets:[25,50,75,100],initial:100,max:100},
-  remainingMp:{label:'PM restants de la cible',presets:[0,3,6],initial:3,max:30},
+  remainingMpPercent:{label:'Tes PM restants (%)',presets:[0,25,50,75,100],initial:100,max:100},
   usedAp:{label:'PA dépensés par la cible',presets:[0,3,6,9,12],initial:3,max:100},
   usedMp:{label:'PM dépensés par la cible',presets:[0,1,3,6],initial:3,max:100},
   initialReceivedDamage:{label:'Dégâts initiaux subis avant réduction',presets:[0,500,1000,2000],initial:0,max:1000000},

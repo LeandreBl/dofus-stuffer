@@ -206,7 +206,8 @@ export function calculateNativeSpellDamage(spell:Spell, input:Stats, target:Comb
       if(e.effectId>=1118&&e.effectId<=1122){parameters.add('casterErodedHp');scale=finite(scenario.casterErodedHp)/100;flatMode=true;}
       if(e.effectId>=1067&&e.effectId<=1071){parameters.add('targetHp');scale=finite(scenario.targetHp,4000)/100;flatMode=true;}
       if(e.effectId>=1124&&e.effectId<=1128){parameters.add('initialReceivedDamage');scale=finite(scenario.initialReceivedDamage)/100;flatMode=true;}
-      if(e.effectId>=1012&&e.effectId<=1016){parameters.add('remainingMp');scale=finite(scenario.remainingMp,3);}
+      // Scales with the caster's remaining MP as a share of their max MP.
+      if(e.effectId>=1012&&e.effectId<=1016){parameters.add('remainingMpPercent');scale=Math.max(0,Math.min(100,finite(scenario.remainingMpPercent,100)))/100;}
       if(poisonResource){const resource=e.effectId<=1135?'usedAp':'usedMp';parameters.add(resource);scale=Math.floor(finite(scenario[resource],3)/Math.max(1,e.diceNum));}
       if(e.effectId>=1223&&e.effectId<=1228){parameters.add('receivedDamage');scale=finite(scenario.receivedDamage)/100;flatMode=true;}
       if(e.effectId===1048){parameters.add('targetHp');scale=finite(scenario.targetHp,4000)/100;flatMode=true;}

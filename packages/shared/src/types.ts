@@ -142,7 +142,7 @@ export interface SpellScenario {
   targetKind?: 'monster' | 'character' | 'summon' | 'staticSummon' | 'companion';
   targetMonsterId?: number;
   targetClassId?: number;
-  remainingMp?: number;
+  remainingMpPercent?: number;
   usedAp?: number;
   usedMp?: number;
   initialReceivedDamage?: number;

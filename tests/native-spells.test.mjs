@@ -154,3 +154,10 @@ test('an invocation attack uses its native stats and inherited percentages, rath
   assert.ok(computed.supported);
   assert.equal(computed.lines[0].normal.min,Math.floor(computed.lines[0].baseMin*6)+60);
 });
+
+test('remaining-MP damage is a share of the caster max MP, full by default',()=>{
+  const s=fixture([effect(1016,40)]);
+  assert.equal(calculate(s).normal.min,40);
+  assert.equal(calculate(s,{},{remainingMpPercent:50}).normal.min,20);
+  assert.equal(calculate(spell('Flèche du Jugement')).normal.min,56);
+});
