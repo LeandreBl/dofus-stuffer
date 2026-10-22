@@ -1,8 +1,8 @@
 import {
   allocateCharacterStats, calculateSpellCriticalChance, calculateSpellDamage, calculateWeaponCriticalChance,
   calculateWeaponDamage, canIncludePower, CHARACTER_STATS, characterPointCost, defaultTarget, evaluateBuild, getCharacterAllocation,
-  getSpellElements, getSpellLevel, getStatConstraintValue, scoreCriterion, SLOTS, slotType, STAT_CAPS,
-  type Build, type BuildEvaluation, type Catalog, type Constraint, type EquipmentItem, type ExoStat, type ItemCondition,
+  getSpellElements, getSpellLevel, getStatConstraintValue, NEBULA_PASSIVE_ID, scoreCriterion, SLOTS, slotType, STAT_CAPS, withNebulaRecast,
+  type Build, type BuildEvaluation, type Catalog, type Constraint, type EquipmentItem, type ExoStat, type ItemCondition, type ItemPassive,
   type OptimizationRequest, type Slot, type SpellDamage, type Stats,
 } from './index.js';
 import { calculateEquipmentMaluses } from './equipment-maluses.js';
@@ -205,6 +205,7 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
   const itemWarned = Uint8Array.from(eligible, item => item.dataWarnings?.length ? 1 : 0);
   const itemUnsupported = Uint8Array.from(eligible, item => item.unsupportedEffects?.length ? 1 : 0);
   const itemPrysma = Uint8Array.from(eligible, item => item.typeId === PRYSMARADITE ? 1 : 0);
+  const itemNebula = eligible.map(item => item.passives?.find(passive => passive.id === NEBULA_PASSIVE_ID));
   // tier[set][count] is the active bonus with that many pieces equipped.
   const setTiers = usedSets.map(id => {
     const set = setById.get(id);
@@ -246,13 +247,14 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
   const setCounts = new Int32Array(usedSets.length);
   const touchedSets: number[] = [];
   let eqCost = 0, eqViolations = 0, eqUnsupported = false;
+  let eqNebula: ItemPassive | undefined;
   const eqConditions: ((v: Float64Array) => boolean)[] = [];
   let weaponIndex = -1;
 
   /** Sums gear and set bonuses of `items` into `eq`; independent of allocation and exos. */
   const sumEquipment = (items: Int32Array) => {
     eq.fill(0);
-    eqCost = 0; eqViolations = 0; eqUnsupported = false;
+    eqCost = 0; eqViolations = 0; eqUnsupported = false; eqNebula = undefined;
     eqConditions.length = 0; touchedSets.length = 0;
     let prysma = 0;
     weaponIndex = items[WEAPON_SLOT];
@@ -264,6 +266,7 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
       eqCost += itemCost[item];
       eqViolations += itemWarned[item];
       if (itemUnsupported[item]) eqUnsupported = true;
+      eqNebula ??= itemNebula[item];
       prysma += itemPrysma[item];
       const condition = itemCondition[item];
       if (condition) eqConditions.push(condition);
@@ -362,8 +365,10 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
         if (constraint.strict && eqUnsupported) supported = false;
         return { value, supported };
       }
-      let damage = constraint.scenario ? undefined : spellCache.get(spell.id);
-      if (!damage) { damage = calculateSpellDamage(spell, stats, request.target, character.level, { catalog, scenario: constraint.scenario }); if (!constraint.scenario) spellCache.set(spell.id, damage); }
+      const damageStats = withNebulaRecast(stats, eqNebula, spell, character.level, constraint.turnOffset ?? 0);
+      const cached = !constraint.scenario && damageStats === stats;
+      let damage = cached ? spellCache.get(spell.id) : undefined;
+      if (!damage) { damage = calculateSpellDamage(spell, damageStats, request.target, character.level, { catalog, scenario: constraint.scenario }); if (cached) spellCache.set(spell.id, damage); }
       let supported = damage.supported && (!spell.classIds.length || spell.classIds.includes(character.classId));
       const turn = damage.turns.find(entry => entry.turn === (constraint.turnOffset ?? 0));
       if (!turn?.available) supported = false;

@@ -12,7 +12,7 @@ import { calculateWeaponCriticalChance, calculateWeaponDamage } from './weapon-d
 import { formatItemCondition } from './equipment-diagnostics.js';
 import { calculateNativeSpellDamage, recastBonus, type SpellCalculationContext } from './spell-damage.js';
 export * from './spell-damage.js';
-import type { Build, BuildEvaluation, Catalog, Character, CombatTarget, Constraint, DamageRange, Element, EquipmentItem, ItemCondition, OptimizationRequest, RawEffect, Slot, SlotType, Spell, SpellDamage, SpellLevel, Stats, WeaponDamage } from './types.js';
+import type { Build, BuildEvaluation, Catalog, Character, CombatTarget, Constraint, DamageRange, Element, EquipmentItem, ItemCondition, ItemPassive, OptimizationRequest, RawEffect, Slot, SlotType, Spell, SpellDamage, SpellLevel, Stats, WeaponDamage } from './types.js';
 
 export const SLOTS: Slot[] = ['amulet', 'ring1', 'ring2', 'hat', 'cape', 'belt', 'boots', 'weapon', 'shield', 'pet', 'dofus1', 'dofus2', 'dofus3', 'dofus4', 'dofus5', 'dofus6'];
 export const ELEMENTS: Element[] = ['neutral', 'earth', 'fire', 'water', 'air'];
@@ -64,6 +64,16 @@ export function calculateSpellDamage(spell: Spell, stats: Stats, target: CombatT
   const level = getSpellLevel(spell, characterLevel);
   if (level?.effects.some(effect => effect.order !== undefined)) return calculateNativeSpellDamage(spell, stats, target, characterLevel, context);
   return calculateLegacySpellDamage(spell, stats, target, characterLevel);
+}
+export const NEBULA_PASSIVE_ID = 5454;
+/** Dofus Nébuleux on a spell with a recast interval (≥ 2 turns), first cast on combat turn 1:
+ * the cast at `turnOffset` lands on turn 1 + turnOffset, odd turns +20 % final damage, even −10 %.
+ * Returns `stats` itself when the passive does not apply. */
+export function withNebulaRecast(stats: Stats, nebula: ItemPassive | undefined, spell: Spell, characterLevel: number, turnOffset = 0): Stats {
+  if (!nebula || (getSpellLevel(spell, characterLevel)?.minCastInterval ?? 0) < 2) return stats;
+  const effect = nebula.effects.find(entry => !entry.clientOnly && entry.effectId === (turnOffset % 2 ? 1172 : 1171));
+  if (!effect) return stats;
+  return { ...stats, dealtDamageMultiplier: finite(stats.dealtDamageMultiplier) + (effect.effectId === 1171 ? 1 : -1) * effect.diceNum };
 }
 function calculateLegacySpellDamage(spell: Spell, stats: Stats, target: CombatTarget = defaultTarget(), characterLevel = 200): SpellDamage {
   const level = getSpellLevel(spell, characterLevel);
@@ -247,6 +257,7 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
   const { cost, knownCost, missingPrices, missingExoPrices } = calculateEquipmentPrice(items, exoBonuses, request.prices);
   const spellCache = new Map<number, SpellDamage>();
   let weaponDamage: WeaponDamage | undefined;
+  const nebula = items.flatMap(item => item.passives ?? []).find(passive => passive.id === NEBULA_PASSIVE_ID);
   const constraints = request.constraints.map(constraint => {
     let value: number | null = null;
     let supported = true;
@@ -264,10 +275,12 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
           && (!spell.classIds.length || spell.classIds.includes(request.character.classId));
         if (constraint.strict && items.some(item => item.unsupportedEffects?.length)) supported = false;
       } else {
-        let damage = constraint.scenario ? undefined : spellCache.get(spell.id);
-        if (!damage) { damage = calculateSpellDamage(spell, stats, request.target, request.character.level, { catalog, scenario: constraint.scenario }); if (!constraint.scenario) spellCache.set(spell.id, damage); }
-        supported = damage.supported && (!spell.classIds.length || spell.classIds.includes(request.character.classId));
         const turnOffset = constraint.turnOffset ?? 0;
+        const damageStats = withNebulaRecast(stats, nebula, spell, request.character.level, turnOffset);
+        const cached = !constraint.scenario && damageStats === stats;
+        let damage = cached ? spellCache.get(spell.id) : undefined;
+        if (!damage) { damage = calculateSpellDamage(spell, damageStats, request.target, request.character.level, { catalog, scenario: constraint.scenario }); if (cached) spellCache.set(spell.id, damage); }
+        supported = damage.supported && (!spell.classIds.length || spell.classIds.includes(request.character.classId));
         const turn = damage.turns.find(entry => entry.turn === turnOffset);
         if (!turn?.available) supported = false;
         const range = constraint.mode === 'critical' ? turn?.critical : turn?.normal;

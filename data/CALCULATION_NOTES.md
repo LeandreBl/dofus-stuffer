@@ -88,6 +88,8 @@ Les boosts déterministes sont extraits du rang disponible, en distinguant le la
 
 La sélection des passifs et boosts est sauvegardée séparément du profil de recherche et concerne les aperçus de sorts et d’armes. Les situations propres à un sort, décrites ci-dessus, sont en revanche conservées dans ses objectifs. Un passif défensif n’augmente pas les dégâts sortants. Un passif dont les branches ne sont pas modélisées reste désactivé avec ses conditions lisibles.
 
+L’optimiseur applique seul le Nébuleux équipé aux objectifs de sorts à relance (intervalle d’au moins deux tours) : le premier lancer a lieu au tour 1, donc +20 % de dommages finaux sur un tour impair et −10 % sur un tour pair. Les sorts lançables à chaque tour ne supposent aucun tour.
+
 ### Limites du moteur hors combat
 
 Le catalogue contient **72 objets** avec un critère inconnu et **179 objets** avec `unsupportedEffects`. Ce dernier groupe couvre les passifs légendaires 1175 et les modificateurs de sorts de classe 280 à 299, y compris portée, PA et relance. Les 25 avertissements d’objets restent distincts des 22 notes d’équilibrage de sorts de `simulation-limitations.json`.

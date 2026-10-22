@@ -487,3 +487,18 @@ test('known price subtotal remains distinct from a missing total and counts ever
   assert.equal(remaining.cost, 0);
   assert.equal(remaining.knownCost, 0);
 });
+
+test('Dofus Nébuleux alternates recast spell objectives from combat turn 1', () => {
+  const value = (minCastInterval, turnOffset) => {
+    const spell = structuredClone(directSpell);
+    spell.levels[0].minCastInterval = minCastInterval;
+    const input = request();
+    input.constraints = [{ id: 'damage', kind: 'spell', spellId: 1, target: 1, relation: 'atLeast', priority: 0, strict: false, metric: 'min', turnOffset }];
+    return evaluateBuild({ ...catalog, spells: [spell] }, input, { slots: { dofus1: 8698 } }).constraints[0].value;
+  };
+  const plain = value(0, 0);
+  assert.equal(value(0, 1), plain); // castable every turn: no turn assumed
+  assert.equal(value(2, 0), Math.floor(plain * 1.2)); // turn 1: +20 %
+  assert.equal(value(2, 2), Math.floor(plain * 1.2)); // turn 3
+  assert.equal(value(3, 3), Math.floor(plain * 0.9)); // turn 4: −10 %
+});
