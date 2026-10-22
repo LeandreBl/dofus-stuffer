@@ -30,12 +30,31 @@ services:
     mem_limit: ${TRAEFIK_MEMORY_LIMIT:?}
     cpus: ${TRAEFIK_CPUS:?}
     networks: [existing-proxy]
+  # API en mode dev (tsx watch) ; réutilise les node_modules et le dist de shared installés par `web`.
   api:
+    image: ${NODE_IMAGE:?}
+    build: !reset null
+    user: "0:0"
+    read_only: false
+    working_dir: /app
     depends_on:
       traefik:
         condition: service_started
     environment:
       TRUSTED_PROXY_HOSTS: traefik
+    command:
+      - sh
+      - -c
+      - >-
+        until cmp -s package-lock.json node_modules/.ci-lock && [ -f packages/shared/dist/index.js ]; do sleep 2; done &&
+        exec npm run dev -w @dofus/api
+    volumes:
+      - .:/app:ro
+      - web-node-modules:/app/node_modules
+      - web-app-node-modules:/app/apps/web/node_modules
+      - web-api-node-modules:/app/apps/api/node_modules
+      - web-admin-node-modules:/app/apps/admin/node_modules
+      - web-shared-dist:/app/packages/shared/dist
     labels:
       traefik.enable: "false"
   # Vite en mode dev (HMR) à la place de nginx ; les node_modules Linux/musl vivent dans des volumes.

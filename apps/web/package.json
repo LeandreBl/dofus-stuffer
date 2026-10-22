@@ -10,11 +10,13 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
+    "@dofus/renderer": "*",
     "@dofus/shared": "*",
+    "@tesseract.js-data/fra": "^1.0.0",
     "lucide-react": "^0.468.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "@dofus/renderer": "*"
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",

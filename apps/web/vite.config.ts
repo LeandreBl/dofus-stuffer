@@ -1,9 +1,10 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { ocrAssets } from "./ocr-assets.ts";
 import { seoPages } from "./seo-pages.ts";
 
 export default defineConfig({
-  plugins: [react(), seoPages()],
+  plugins: [react(), seoPages(), ocrAssets()],
   server: {
     port: 5173,
     proxy: {

@@ -5,6 +5,7 @@ export * from './weapon-damage.js';
 export * from './combat-preview.js';
 export * from './equipment-maluses.js';
 export * from './equipment-price.js';
+export * from './forgemagic.js';
 import { calculateEquipmentPrice } from './equipment-price.js';
 import { calculateEquipmentMaluses } from './equipment-maluses.js';
 import { getCharacterAllocation } from './character.js';

@@ -14,5 +14,5 @@
     "noEmit": true,
     "allowImportingTsExtensions": true
   },
-  "include": ["src", "vite.config.ts", "seo-pages.ts"]
+  "include": ["src", "vite.config.ts", "seo-pages.ts", "ocr-assets.ts"]
 }

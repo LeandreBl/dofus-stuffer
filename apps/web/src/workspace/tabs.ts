@@ -1,8 +1,8 @@
-import { Coins, Layers3, Package, SlidersHorizontal, Swords } from "lucide-react";
+import { Coins, Hammer, Layers3, Package, SlidersHorizontal, Swords } from "lucide-react";
 
-export type Tab = "builder" | "equipment" | "spells" | "items" | "market";
+export type Tab = "builder" | "equipment" | "spells" | "items" | "forge" | "market";
 // Shareable URLs per tab; any other path (/, /class/iop/) opens the workshop.
-export const tabPaths: Record<Tab, string> = { builder: "/", equipment: "/build/", spells: "/damage/", items: "/items/", market: "/market/" };
+export const tabPaths: Record<Tab, string> = { builder: "/", equipment: "/build/", spells: "/damage/", items: "/items/", forge: "/forge/", market: "/market/" };
 export const tabFromPath = (path: string): Tab =>
   (Object.keys(tabPaths) as Tab[]).find((id) => id !== "builder" && tabPaths[id] === path.replace(/\/?$/, "/")) ?? "builder";
 export const tabs = [
@@ -10,6 +10,7 @@ export const tabs = [
   { id: "equipment", label: "Mon stuff", Icon: Layers3 },
   { id: "spells", label: "Mes dégâts", Icon: Swords },
   { id: "items", label: "Équipements", Icon: Package },
+  { id: "forge", label: "Forgemagie", Icon: Hammer },
   { id: "market", label: "Marché", Icon: Coins },
 ] as const;
 export const tabTitles: Record<Tab, string> = {
@@ -17,5 +18,6 @@ export const tabTitles: Record<Tab, string> = {
   equipment: "Compare les résultats ou compose ton équipement, pièce par pièce.",
   spells: "Explore ton grimoire et mesure ce que ton équipement change vraiment.",
   items: "Cherche un équipement, consulte ses effets, équipe-le, impose-le ou exclus-le de tes recherches.",
+  forge: "Planifie ta forgemagie : la bonne rune au bon moment, selon ton jet et ton puits.",
   market: "Des prix que tu maîtrises, pour estimer le coût de ton stuff.",
 };

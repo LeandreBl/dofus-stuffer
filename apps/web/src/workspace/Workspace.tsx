@@ -17,6 +17,7 @@ import { stuffFilename } from "../lib/class-slug";
 import { urlParam } from "../lib/url";
 import { BuilderTab } from "../tabs/builder/BuilderTab";
 import { EquipmentTab } from "../tabs/equipment/EquipmentTab";
+import { ForgeTab } from "../tabs/forge/ForgeTab";
 import { ItemsTab } from "../tabs/items/ItemsTab";
 import { MarketTab } from "../tabs/market/MarketTab";
 import { SpellsTab } from "../tabs/spells/SpellsTab";
@@ -240,6 +241,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
             }}
           />
         )}
+        {tab === "forge" && <ForgeTab catalog={catalog} notify={notify} />}
         {tab === "market" && (
           <MarketTab
             catalog={catalog}
@@ -251,7 +253,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
         )}
       </main>
       <AppFooter catalog={catalog} />
-      <LaunchButton
+      {tab !== "forge" && <LaunchButton
         starting={optimization.starting}
         active={active}
         disabled={request.constraints.length === 0 || !characterAllocation.valid}
@@ -261,7 +263,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
         statusTitles={statusTitles}
         onLaunch={() => void optimize()}
         onCancel={() => void optimization.cancel()}
-      />
+      />}
       {criteria.editing && (
         <ConstraintEditor
           criterion={criteria.editing}
