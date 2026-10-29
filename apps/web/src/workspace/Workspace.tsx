@@ -146,7 +146,6 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
       const imported = parseStuff(catalog, await file.text(), request.character);
       if (Object.keys(build.slots).length && !window.confirm("Remplacer ton stuff actuel par celui du fichier ?")) return;
       setBuild(imported.build);
-      setTab("equipment");
       notify(imported.ignored ? `Stuff importé. ${imported.ignored} objet(s) absent(s) de ce catalogue ignoré(s).` : "Stuff importé.");
     } catch {
       setError("Ce fichier ne contient pas de stuff Dofus Stuffer valide.");
