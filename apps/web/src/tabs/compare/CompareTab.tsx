@@ -203,12 +203,12 @@ export function CompareTab({ catalog, request, stuffs, onChange, notify }: {
                       {spell ? <SpellHover spell={spell} characterLevel={stuff.character.level} catalog={catalog}><span tabIndex={0}>{name}</span></SpellHover>
                         : weapon ? <ItemHover item={weapon} catalog={catalog} request={request}><span tabIndex={0}>{name}</span></ItemHover>
                         : <span>{name}</span>}
-                      {entry?.chance ? <small className="compare-chance">{fmt(entry.chance)} %</small> : null}
+                      <small className="compare-chance">{entry?.chance ? `${fmt(entry.chance)} %` : ""}</small>
                       <strong>
-                        {!supported ? "—" : <>
+                        {!supported ? <>—<i className="compare-crit-slot" /></> : <>
                           <DamageHover catalog={catalog} title={spell?.name ?? weapon?.name ?? "Arme"} subtitle={stuff.name} icon={spell?.icon ?? weapon?.icon}
                             detail={{ normal: entry!.cast!.normal, critical: entry!.cast!.critical, chance: entry!.chance, criticalShown: critical }}>
-                            <span tabIndex={0} className={stuffs.length > 1 && value === best(values.map((entry) => entry.value)) ? "compare-best" : ""}>{fmt(value)}{critical && <StatIcon stat={catalog.stats.find((entry) => entry.key === "criticalHit")} />}</span>
+                            <span tabIndex={0} className={stuffs.length > 1 && value === best(values.map((entry) => entry.value)) ? "compare-best" : ""}>{fmt(value)}{critical ? <StatIcon stat={catalog.stats.find((entry) => entry.key === "criticalHit")} /> : <i className="compare-crit-slot" />}</span>
                           </DamageHover>
                         </>}
                       </strong>

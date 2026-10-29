@@ -3287,7 +3287,11 @@ button.item-card-set:hover {
 /* The critical icon is a fixed-size sprite: scale it down instead of cropping it. */
 .compare-spell strong .stat-icon { transform: scale(.6); margin: -4px -4px -4px -2px; }
 .compare-spell strong .stat-icon img { width: 22px; height: 22px; }
-.compare-chance { color: var(--muted); }
+/* Fixed right-aligned columns so critical chances and damage line up across rows and cards. */
+.compare-chance { color: var(--muted); width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+.compare-spell > strong { min-width: 62px; display: flex; justify-content: flex-end; }
+/* Same footprint as the scaled critical icon, so normal and critical numbers stay aligned. */
+.compare-crit-slot { display: inline-block; width: 16px; }
 .compare-best { color: var(--accent); }
 .stat-line.compare-best strong { color: var(--accent); }
 .compare-add { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; padding-top: 50px; min-height: 170px; text-align: center; border-style: dashed; color: var(--muted); cursor: pointer; }
