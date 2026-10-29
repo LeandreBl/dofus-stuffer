@@ -68,7 +68,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
     () => evaluateBuild(catalog, manualBuildRequest(request), build),
     [catalog, request, build],
   );
-  const characterAllocation = getCharacterAllocation({ ...request.character, baseStats: request.character.allocationMode === "manual" ? request.character.baseStats : {} });
+  const characterAllocation = getCharacterAllocation({ ...request.character, baseStats: {} });
   const weapon = catalog.items.find((entry) => entry.id === build.slots.weapon);
   const equippedItemSlot = !item ? undefined : itemSlot
     ? (build.slots[itemSlot] === item.id ? itemSlot : undefined)

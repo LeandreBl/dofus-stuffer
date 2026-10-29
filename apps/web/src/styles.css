@@ -2510,6 +2510,7 @@ svg.corner-loader {
   gap: 8px 12px;
   margin-top: 17px;
 }
+.character-grid.scrolls-only { grid-template-columns: minmax(100px, 1fr) minmax(125px, 340px); }
 .character-grid-label { font-size: 9px; color: var(--muted); }
 .character-stat {
   display: flex;

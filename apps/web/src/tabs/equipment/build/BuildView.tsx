@@ -22,6 +22,7 @@ export function BuildView({
   onExo,
   onExtraStats,
   onCharacter,
+  onBaseStats,
   onLock,
   onLockAll,
   onUnlockAll,
@@ -38,6 +39,7 @@ export function BuildView({
   onExo: (exo: ExoStat, enabled: boolean) => void;
   onExtraStats: (stats: Stats) => void;
   onCharacter: (character: Character) => void;
+  onBaseStats: (baseStats: Stats) => void;
   onLock: (slot: Slot) => void;
   onLockAll: () => void;
   onUnlockAll: () => void;
@@ -56,7 +58,7 @@ export function BuildView({
           stats={evaluation.stats}
           keys={["hitPoints", "actionPoints", "movementPoints", "range", "maxSummonedCreaturesBoost", "criticalHit", "damagePercent"]}
         />
-        <BaseStatsTable catalog={catalog} character={request.character} evaluation={evaluation} onChange={onCharacter} />
+        <BaseStatsTable catalog={catalog} character={request.character} evaluation={evaluation} onChange={onCharacter} onBaseStats={onBaseStats} />
         <StatsPanel
           title="Caractéristiques secondaires"
           catalog={catalog}

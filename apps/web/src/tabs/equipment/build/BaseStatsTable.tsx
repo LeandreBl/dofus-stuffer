@@ -1,18 +1,20 @@
-import { CHARACTER_STATS, characterPointCost, getCharacterAllocation, type BuildEvaluation, type Catalog, type Character } from "@dofus/shared";
+import { CHARACTER_STATS, characterPointCost, getCharacterAllocation, type BuildEvaluation, type Catalog, type Character, type Stats } from "@dofus/shared";
 import { StatIcon } from "../../../components/StatIcon";
 import { fmt } from "../../../lib/format";
 
 const names: Record<string, string> = { vitality: "Vita.", strength: "Force", intelligence: "Intel.", chance: "Chance", agility: "Agi.", wisdom: "Sag." };
 
 /** Base, scroll and equipment parts of each characteristic. */
-export function BaseStatsTable({ catalog, character, evaluation, onChange }: {
+export function BaseStatsTable({ catalog, character, evaluation, onChange, onBaseStats }: {
   catalog: Catalog;
   character: Character;
   evaluation: BuildEvaluation;
   onChange: (character: Character) => void;
+  /** The build's characteristic points: the engine sets them, the player may retouch them here. */
+  onBaseStats: (baseStats: Stats) => void;
 }) {
   const stats = evaluation.stats;
-  const base = (key: string) => evaluation.breakdown?.[key]?.base ?? (character.allocationMode === "manual" ? character.baseStats[key] : evaluation.build.baseStats?.[key]) ?? 0;
+  const base = (key: string) => evaluation.breakdown?.[key]?.base ?? evaluation.build.baseStats?.[key] ?? 0;
   const value = (input: string, max = Infinity) => Math.max(0, Math.min(max, Math.floor(Number(input)) || 0));
   const shown = Object.fromEntries(CHARACTER_STATS.map((stat) => [stat, base(stat)]));
   const points = getCharacterAllocation({ ...character, baseStats: shown });
@@ -23,12 +25,7 @@ export function BaseStatsTable({ catalog, character, evaluation, onChange }: {
     while (low < high) { const mid = Math.ceil((low + high) / 2); if (characterPointCost(key, mid) <= budget) low = mid; else high = mid - 1; }
     return low;
   };
-  // Editing a base value switches to manual allocation, seeded with the base currently shown.
-  const setBase = (key: string, input: string) => onChange({
-    ...character,
-    allocationMode: "manual",
-    baseStats: { ...shown, [key]: value(input, maxBase(key)) },
-  });
+  const setBase = (key: string, input: string) => onBaseStats({ ...shown, [key]: value(input, maxBase(key)) });
   return (
     <section className="panel build-base-stats">
       <h3>Mes vraies caractéristiques</h3>

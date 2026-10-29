@@ -103,9 +103,11 @@ function restoreState(catalog: Catalog, stored: any, fallback: SavedState): Save
           (criterion.kind === "spell" &&
             catalog.spells.some((spell) => spell.id === criterion.spellId))),
     ).map((criterion: Constraint) => criterion.scenario ? { ...criterion, scenario: withoutCreatureTarget(criterion.scenario) } : criterion);
-    if (!stored.request.character.allocationMode) {
+    // The engine always spends the characteristic points; a manual split becomes the build's starting one.
+    if (stored.request.character.allocationMode !== "automatic") {
       stored.request.character.allocationMode = "automatic";
       stored.build.baseStats ??= { ...stored.request.character.baseStats };
+      stored.request.character.baseStats = {};
     }
     const catalogUpdated = stored.catalogVersion !== catalog.version || (!!stored.catalogRevision && stored.catalogRevision !== catalog.revision);
     if (catalogUpdated) {
