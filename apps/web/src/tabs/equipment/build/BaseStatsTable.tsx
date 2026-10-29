@@ -5,12 +5,21 @@ import { fmt } from "../../../lib/format";
 const names: Record<string, string> = { vitality: "Vita.", strength: "Force", intelligence: "Intel.", chance: "Chance", agility: "Agi.", wisdom: "Sag." };
 
 /** Base, scroll and equipment parts of each characteristic. */
-export function BaseStatsTable({ catalog, character, evaluation }: {
+export function BaseStatsTable({ catalog, character, evaluation, onChange }: {
   catalog: Catalog;
   character: Character;
   evaluation: BuildEvaluation;
+  onChange: (character: Character) => void;
 }) {
   const stats = evaluation.stats;
+  const base = (key: string) => evaluation.breakdown?.[key]?.base ?? (character.allocationMode === "manual" ? character.baseStats[key] : evaluation.build.baseStats?.[key]) ?? 0;
+  const value = (input: string, max = Infinity) => Math.max(0, Math.min(max, Math.floor(Number(input)) || 0));
+  // Editing a base value switches to manual allocation, seeded with the base currently shown.
+  const setBase = (key: string, input: string) => onChange({
+    ...character,
+    allocationMode: "manual",
+    baseStats: { ...Object.fromEntries(CHARACTER_STATS.map((stat) => [stat, base(stat)])), [key]: value(input) },
+  });
   return (
     <section className="panel build-base-stats">
       <h3>Mes vraies caractéristiques</h3>
@@ -23,8 +32,8 @@ export function BaseStatsTable({ catalog, character, evaluation }: {
           const power = ["strength", "intelligence", "chance", "agility"].includes(key) ? stats.damagePercent || 0 : 0;
           return <tr key={key} title={`${stat?.name || key} : base + parchotage + équipement et panoplies${power ? `, ${fmt(total + power)} pour les dégâts avec la puissance` : ""}`}>
             <td><span><StatIcon stat={stat} />{names[key]}</span></td>
-            <td>{fmt(detail?.base ?? (character.allocationMode === "manual" ? character.baseStats[key] : evaluation.build.baseStats?.[key]) ?? 0)}</td>
-            <td>{fmt(detail?.scroll ?? character.scrollStats?.[key] ?? 0)}</td>
+            <td><input type="number" min="0" step="1" aria-label={`Base ${stat?.name || key}`} value={base(key)} onChange={(event) => setBase(key, event.target.value)} /></td>
+            <td><input type="number" min="0" max="100" step="1" aria-label={`Parchotage ${stat?.name || key}`} value={character.scrollStats?.[key] ?? 0} onChange={(event) => onChange({ ...character, scrollStats: { ...character.scrollStats, [key]: value(event.target.value, 100) } })} /></td>
             <td>{fmt(detail?.equipment ?? 0)}</td>
             <td><strong>{fmt(total)}</strong>{power !== 0 && <small>({fmt(total + power)})</small>}</td>
           </tr>;

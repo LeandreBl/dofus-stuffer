@@ -1,5 +1,5 @@
 import { useMemo, type ReactNode } from "react";
-import { inspectEquipment, type BuildEvaluation, type Catalog, type EquipmentItem, type ExoStat, type OptimizationRequest, type Slot, type Stats } from "@dofus/shared";
+import { inspectEquipment, type BuildEvaluation, type Catalog, type Character, type EquipmentItem, type ExoStat, type OptimizationRequest, type Slot, type Stats } from "@dofus/shared";
 import { manualBuildRequest } from "../../../lib/build-preview";
 import { ActiveSetsPanel } from "./ActiveSetsPanel";
 import { BaseStatsTable } from "./BaseStatsTable";
@@ -21,6 +21,7 @@ export function BuildView({
   onClear,
   onExo,
   onExtraStats,
+  onCharacter,
   onLock,
   onLockAll,
   onUnlockAll,
@@ -36,6 +37,7 @@ export function BuildView({
   onClear: () => void;
   onExo: (exo: ExoStat, enabled: boolean) => void;
   onExtraStats: (stats: Stats) => void;
+  onCharacter: (character: Character) => void;
   onLock: (slot: Slot) => void;
   onLockAll: () => void;
   onUnlockAll: () => void;
@@ -54,7 +56,7 @@ export function BuildView({
           stats={evaluation.stats}
           keys={["hitPoints", "actionPoints", "movementPoints", "range", "maxSummonedCreaturesBoost", "criticalHit", "damagePercent"]}
         />
-        <BaseStatsTable catalog={catalog} character={request.character} evaluation={evaluation} />
+        <BaseStatsTable catalog={catalog} character={request.character} evaluation={evaluation} onChange={onCharacter} />
         <StatsPanel
           title="Caractéristiques secondaires"
           catalog={catalog}

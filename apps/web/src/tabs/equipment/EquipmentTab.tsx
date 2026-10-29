@@ -97,6 +97,7 @@ export function EquipmentTab({
             onPriorities={onBuilder}
           />
         }
+        onCharacter={(character) => setRequest((previous) => ({ ...previous, character }))}
         onExtraStats={(extraStats) => setBuild((previous) => ({ ...previous, extraStats }))}
         onExo={(exo, enabled) => {
           setBuild((previous) => ({ ...previous, exoBonuses: enabled ? [...new Set([...(previous.exoBonuses || []), exo])] : (previous.exoBonuses || []).filter((value) => value !== exo) }));

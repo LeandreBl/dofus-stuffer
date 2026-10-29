@@ -7,8 +7,8 @@ import { EquipmentLocks } from "./EquipmentLocks";
 import { EquipmentMaluses } from "./EquipmentMaluses";
 import { EquipmentSlot } from "./EquipmentSlot";
 
-const leftSlots: Slot[] = ["amulet", "ring1", "ring2", "weapon", "shield"];
-const rightSlots: Slot[] = ["hat", "cape", "belt", "boots", "pet"];
+const leftSlots: Slot[] = ["hat", "cape", "weapon", "shield", "pet"];
+const rightSlots: Slot[] = ["amulet", "ring1", "ring2", "belt", "boots"];
 const dofusSlots: Slot[] = ["dofus1", "dofus2", "dofus3", "dofus4", "dofus5", "dofus6"];
 
 /** The paperdoll: slots, character, locks, exos and the build cost. */
