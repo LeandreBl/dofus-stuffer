@@ -66,6 +66,15 @@ export function calculateSpellDamage(spell: Spell, stats: Stats, target: CombatT
   if (level?.effects.some(effect => effect.order !== undefined)) return calculateNativeSpellDamage(spell, stats, target, characterLevel, context);
   return calculateLegacySpellDamage(spell, stats, target, characterLevel);
 }
+/** Damage of the cast `turn` turns after the first one. The computed table stops once recast charges
+ * have settled; later turns repeat the last cast of the table, available every recast interval. */
+export function getSpellTurn<T extends SpellDamage['turns'][number]>(damage: { turns: T[] }, turn: number): T | undefined {
+  const found = damage.turns.find(entry => entry.turn === turn);
+  if (found || !damage.turns.length) return found;
+  const step = damage.turns.find(entry => entry.turn > 0 && entry.available)?.turn;
+  const last = [...damage.turns].reverse().find(entry => entry.available);
+  return last && { ...last, turn, available: !!step && turn % step === 0 };
+}
 export const NEBULA_PASSIVE_ID = 5454;
 /** Dofus Nébuleux on a spell with a recast interval (≥ 2 turns), first cast on combat turn 1:
  * the cast at `turnOffset` lands on turn 1 + turnOffset, odd turns +20 % final damage, even −10 %.
@@ -283,7 +292,7 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
         let damage = cached ? spellCache.get(spell.id) : undefined;
         if (!damage) { damage = calculateSpellDamage(spell, damageStats, request.target, request.character.level, { catalog, scenario: constraint.scenario }); if (cached) spellCache.set(spell.id, damage); }
         supported = damage.supported && (!spell.classIds.length || spell.classIds.includes(request.character.classId));
-        const turn = damage.turns.find(entry => entry.turn === turnOffset);
+        const turn = getSpellTurn(damage, turnOffset);
         if (!turn?.available) supported = false;
         const range = constraint.mode === 'critical' ? turn?.critical : turn?.normal;
         value = range?.[constraint.metric ?? 'average'] ?? null;

@@ -502,3 +502,15 @@ test('Dofus Nébuleux alternates recast spell objectives from combat turn 1', ()
   assert.equal(value(2, 2), Math.floor(plain * 1.2)); // turn 3
   assert.equal(value(3, 3), Math.floor(plain * 0.9)); // turn 4: −10 %
 });
+
+test('getSpellTurn extends the recast table past its horizon', async () => {
+  const { getSpellTurn } = await import('../packages/shared/dist/index.js');
+  const range = (min) => ({ min, average: min, max: min });
+  const everyTurn = { turns: [0, 1, 2, 3].map((turn) => ({ turn, bonus: 0, normal: range(10 + turn), critical: null, available: true })) };
+  assert.equal(getSpellTurn(everyTurn, 6).normal.min, 13);
+  assert.equal(getSpellTurn(everyTurn, 6).available, true);
+  const everyTwo = { turns: [0, 1, 2, 3].map((turn) => ({ turn, bonus: 0, normal: range(10 + turn), critical: null, available: turn % 2 === 0 })) };
+  assert.equal(getSpellTurn(everyTwo, 5).available, false);
+  assert.equal(getSpellTurn(everyTwo, 6).available, true);
+  assert.equal(getSpellTurn(everyTwo, 6).normal.min, 12);
+});

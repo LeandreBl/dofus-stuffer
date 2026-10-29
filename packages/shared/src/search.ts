@@ -1,7 +1,7 @@
 import {
   allocateCharacterStats, calculateSpellCriticalChance, calculateSpellDamage, calculateWeaponCriticalChance,
   calculateWeaponDamage, canIncludePower, CHARACTER_STATS, characterPointCost, defaultTarget, evaluateBuild, getCharacterAllocation,
-  getSpellElements, getSpellLevel, getStatConstraintValue, NEBULA_PASSIVE_ID, scoreCriterion, SLOTS, slotType, STAT_CAPS, withNebulaRecast,
+  getSpellElements, getSpellLevel, getSpellTurn, getStatConstraintValue, NEBULA_PASSIVE_ID, scoreCriterion, SLOTS, slotType, STAT_CAPS, withNebulaRecast,
   type Build, type BuildEvaluation, type Catalog, type Constraint, type EquipmentItem, type ExoStat, type ItemCondition, type ItemPassive,
   type OptimizationRequest, type Slot, type SpellDamage, type Stats,
 } from './index.js';
@@ -55,8 +55,8 @@ function itemHeuristic(item: EquipmentItem, request: OptimizationRequest, catalo
         const spell = catalog.spells.find(value => value.id === constraint.spellId);
         const damage = (stats: Stats) => {
           if (!spell) return 0;
-          const turn = calculateSpellDamage(spell, stats, defaultTarget(), request.character.level, { catalog, scenario: constraint.scenario })
-            .turns.find(entry => entry.turn === (constraint.turnOffset ?? 0));
+          const cast = calculateSpellDamage(spell, stats, defaultTarget(), request.character.level, { catalog, scenario: constraint.scenario });
+          const turn = getSpellTurn(cast, constraint.turnOffset ?? 0);
           return (constraint.mode === 'critical' ? turn?.critical : turn?.normal)?.[constraint.metric === 'min' || constraint.metric === 'max' ? constraint.metric : 'average'] ?? 0;
         };
         const base = damage({});
@@ -370,7 +370,7 @@ export function createSearch(catalog: Catalog, request: OptimizationRequest, see
       let damage = cached ? spellCache.get(spell.id) : undefined;
       if (!damage) { damage = calculateSpellDamage(spell, damageStats, request.target, character.level, { catalog, scenario: constraint.scenario }); if (cached) spellCache.set(spell.id, damage); }
       let supported = damage.supported && (!spell.classIds.length || spell.classIds.includes(character.classId));
-      const turn = damage.turns.find(entry => entry.turn === (constraint.turnOffset ?? 0));
+      const turn = getSpellTurn(damage, constraint.turnOffset ?? 0);
       if (!turn?.available) supported = false;
       const value = (constraint.mode === 'critical' ? turn?.critical : turn?.normal)?.[constraint.metric ?? 'average'] ?? null;
       if (value === null || (constraint.strict && eqUnsupported)) supported = false;
