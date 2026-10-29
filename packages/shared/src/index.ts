@@ -261,6 +261,7 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
   const nebula = items.flatMap(item => item.passives ?? []).find(passive => passive.id === NEBULA_PASSIVE_ID);
   const constraints = request.constraints.map(constraint => {
     let value: number | null = null;
+    let preview: number | null | undefined;
     let supported = true;
     if (constraint.kind === 'stat') {
       value = getStatConstraintValue(constraint, stats);
@@ -288,6 +289,9 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
         value = range?.[constraint.metric ?? 'average'] ?? null;
         if (value === null) supported = false;
         if (constraint.strict && items.some(item => item.unsupportedEffects?.length)) supported = false;
+        // Display only: critical damage when the spell almost always crits, normal damage otherwise.
+        const criticalChance = calculateSpellCriticalChance(spell, stats, request.character.level) ?? 0;
+        preview = (criticalChance > 85 ? turn?.critical : turn?.normal)?.[constraint.metric ?? 'average'] ?? null;
       }
     }
     if (constraint.kind === 'weapon') {
@@ -308,7 +312,7 @@ export function evaluateBuild(catalog: Catalog, request: OptimizationRequest, bu
     }
     const result = scoreCriterion(constraint, supported ? value : null);
     if (constraint.strict && (!supported || !result.satisfied)) violations.push(`Exigence non satisfaite : ${constraint.id}.`);
-    return { id: constraint.id, value, supported, satisfied: supported && result.satisfied, score: result.score };
+    return { id: constraint.id, value, preview, supported, satisfied: supported && result.satisfied, score: result.score };
   });
   const ranks = [...new Set(request.constraints.map(constraint => constraint.priority))].sort((a, b) => a - b);
   let numerator = 0, denominator = 0;

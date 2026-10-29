@@ -22,7 +22,7 @@ export function ObjectivesPanel({ catalog, constraints, evaluation }: {
                 {result?.supported
                   ? criterion.kind === "price"
                     ? money(result.value)
-                    : `${fmt(result.value)}${criterion.metric === "criticalChance" ? " %" : ""}`
+                    : `${fmt(result.preview !== undefined ? result.preview : result.value)}${criterion.metric === "criticalChance" ? " %" : ""}`
                   : "À vérifier"}
               </b>
             </div>

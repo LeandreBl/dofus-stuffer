@@ -292,7 +292,7 @@ export interface WeaponDamage {
   supported: boolean;
   warnings: string[];
 }
-export interface ConstraintEvaluation { id: string; value: number | null; satisfied: boolean; supported: boolean; score: number; }
+export interface ConstraintEvaluation { id: string; value: number | null; /** Spell damage shown to the user: critical roll if critical chance > 85 %, else normal. */ preview?: number | null; satisfied: boolean; supported: boolean; score: number; }
 export interface EquipmentMaluses { stats: Stats; penalty: number; }
 export interface BuildEvaluation {
   build: Build;
