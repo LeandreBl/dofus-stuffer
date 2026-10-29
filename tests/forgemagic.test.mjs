@@ -118,6 +118,7 @@ test('outcomes are recognised from the item before and after a rune', async () =
   assert.equal(fmDetectOutcome(lines, before, { values: { 125: 285, 118: 63, 115: 4 }, pool: 0 }).outcome, 'partial');
   assert.deepEqual(fmDetectOutcome(lines, before, { values: { ...before.values, 115: 3 }, pool: 7 }), { outcome: 'failure' });
   assert.equal(fmDetectOutcome(lines, before, before), undefined, 'a harmless failure cannot be seen');
+  assert.equal(fmDetectOutcome(lines, { ...before, pool: 4 }, { ...before, pool: 40 }), undefined, 'a pool that only grew is a misread');
   assert.equal(fmDetectOutcome(lines, before, { values: { 125: 305, 118: 63, 115: 4 }, pool: 0 }), undefined, 'two lines up is a misread');
 });
 

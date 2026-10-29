@@ -3219,7 +3219,10 @@ button.item-card-set:hover {
 .forge-summary .stats-list { display: flex; flex-direction: column; gap: 10px; }
 .forge-pool { margin-top: 16px; }
 .forge-rune { display: flex; align-items: center; gap: 11px; margin-bottom: 14px; }
+.forge-rune-icon { width: 40px; height: 40px; object-fit: contain; flex-shrink: 0; }
 .forge-rune strong { font-size: 15px; color: var(--accent); }
+.forge-overlay-body { margin: 0; overflow: hidden; }
+.forge-overlay { margin: 0; padding: 10px 12px; }
 .forge-odds { display: flex; height: 9px; border-radius: 5px; overflow: hidden; background: var(--raised); }
 .forge-odds .clean, .forge-outcomes .clean { background: var(--accent); }
 .forge-odds .partial, .forge-outcomes .partial { background: var(--gold); }
@@ -3252,3 +3255,4 @@ button.item-card-set:hover {
 @media (prefers-reduced-motion: reduce) { .forge-spin { animation: none; } }
 .forge-calibration .stats-list { display: flex; flex-direction: column; gap: 10px; }
 .forge-calibration-reset { margin-top: 14px; }
+.stat-breakdown td input { width: 42px; padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: #0c100d; color: inherit; font: inherit; text-align: right; }

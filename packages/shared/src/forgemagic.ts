@@ -244,12 +244,12 @@ function baseOdds(lines: readonly FmLine[], values: FmValues) {
 
 /** Estimated odds of a rune on a line: critical success (clean), neutral success (partial), critical failure. */
 export function fmOdds(lines: readonly FmLine[], values: FmValues, line: FmLine, rune: FmRune): FmOdds {
-  const odds = modelOdds(lines, values, line, rune);
+  const odds = fmModelOdds(lines, values, line, rune);
   return odds.failure >= 1 ? odds : normalised(odds.clean * FM_MODEL.cleanScale, odds.failure * FM_MODEL.failureScale);
 }
 
-/** The community model, before calibration. */
-function modelOdds(lines: readonly FmLine[], values: FmValues, line: FmLine, rune: FmRune): FmOdds {
+/** The community model, before calibration: what observations are logged with, so calibrating never compounds. */
+export function fmModelOdds(lines: readonly FmLine[], values: FmValues, line: FmLine, rune: FmRune): FmOdds {
   const M = FM_MODEL, w = line.weight;
   const current = values[line.effectId] ?? 0, after = current + rune.points;
   const base = baseOdds(lines, values);
@@ -489,9 +489,11 @@ export interface FmObservation extends FmOdds { outcome: FmOutcome; seen: 'scree
 export function fmDetectOutcome(lines: readonly FmLine[], before: FmState, after: FmState): { line?: FmLine; rune?: FmRune; outcome: FmOutcome } | undefined {
   const delta = (line: FmLine) => (after.values[line.effectId] ?? 0) - (before.values[line.effectId] ?? 0);
   const up = lines.filter(line => delta(line) > 0);
-  const lost = lines.some(line => delta(line) < 0) || after.pool !== before.pool;
+  const dropped = lines.some(line => delta(line) < 0);
+  const lost = dropped || after.pool !== before.pool;
   if (up.length > 1) return undefined;
-  if (!up.length) return lost ? { outcome: 'failure' } : undefined;
+  // A failure the pool paid lowers it; a pool that only grew is a misread number.
+  if (!up.length) return dropped || after.pool < before.pool ? { outcome: 'failure' } : undefined;
   const rune = fmRunesFor(up[0].effectId).find(rune => rune.points === delta(up[0]));
   return rune && { line: up[0], rune, outcome: lost ? 'partial' : 'clean' };
 }
@@ -519,7 +521,12 @@ export function fmCalibration(log: readonly FmObservation[]): FmCalibration {
     if (score > best.score) best = { cleanScale, failureScale, score };
   }
   const share = (outcome: FmOutcome) => log.length ? log.filter(entry => entry.outcome === outcome).length / log.length : 0;
-  const mean = (key: keyof FmOdds) => log.length ? log.reduce((sum, entry) => sum + entry[key], 0) / log.length : 0;
+  // What the uncalibrated model expected to be seen: harmless failures are not, on screen.
+  const expected = log.map(entry => {
+    const visible = entry.seen === 'screen' ? 1 - entry.failure * harmless : 1;
+    return { clean: entry.clean / visible, partial: entry.partial / visible, failure: entry.failure * (entry.seen === 'screen' ? 1 - harmless : 1) / visible };
+  });
+  const mean = (key: keyof FmOdds) => log.length ? expected.reduce((sum, entry) => sum + entry[key], 0) / log.length : 0;
   return {
     cleanScale: best.cleanScale, failureScale: best.failureScale, count: log.length,
     observed: { clean: share('clean'), partial: share('partial'), failure: share('failure') },

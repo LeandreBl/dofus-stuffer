@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Gauge, Hammer, Info, Scale } from "lucide-react";
 import {
-  FM_EFFECTS, FM_MODEL, fmAdvice, fmCalibration, fmDetectOutcome, fmEffectLabels, fmHardLines, fmOdds, fmExoLine, fmParseScreen, fmItemWeight, fmLineCap, fmLines, fmPerfectWeight, fmRuneWeight, fmValueWeight,
+  FM_EFFECTS, FM_MODEL, fmAdvice, fmCalibration, fmDetectOutcome, fmEffectLabels, fmHardLines, fmModelOdds, fmExoLine, fmParseScreen, fmItemWeight, fmLineCap, fmLines, fmPerfectWeight, fmRuneWeight, fmValueWeight,
   type Catalog, type EquipmentItem, type FmLine, type FmObservation, type FmOutcome, type FmRune,
 } from "@dofus/shared";
 import { GameImage } from "../../components/GameImage";
@@ -41,7 +41,7 @@ export function ForgeTab({ catalog, notify }: { catalog: Catalog; notify: (messa
   const setValue = (effectId: number, value: number) => setSession((s) => ({ ...s, values: { ...s.values, [effectId]: value } }));
   const setTarget = (effectId: number, value: number) => setSession((s) => ({ ...s, targets: { ...s.targets, [effectId]: value } }));
   const observe = (line: FmLine, rune: FmRune, outcome: FmOutcome, seen: FmObservation["seen"]) =>
-    setLog((previous) => [...previous, { ...fmOdds(lines, values, line, rune), outcome, seen }]);
+    setLog((previous) => [...previous, { ...fmModelOdds(lines, values, line, rune), outcome, seen }]);
   function outcome(rune: FmRune, line: FmLine, result: ForgeOutcome) {
     observe(line, rune, result, "manual");
     const left = pool - fmRuneWeight(rune);
@@ -146,8 +146,8 @@ export function ForgeTab({ catalog, notify }: { catalog: Catalog; notify: (messa
             <>
               <div className="stats-list">
                 <div className="stat-line"><span /><span>Runes observées</span><strong>{calibration.count}</strong></div>
-                <div className="stat-line"><span /><span>Succès critiques : vus / prévus</span><strong>{fmt(calibration.observed.clean * 100)} % / {fmt(calibration.predicted.clean * 100)} %</strong></div>
-                <div className="stat-line"><span /><span>Échecs critiques : vus / prévus</span><strong>{fmt(calibration.observed.failure * 100)} % / {fmt(calibration.predicted.failure * 100)} %</strong></div>
+                <div className="stat-line"><span /><span>Succès critiques : vus / prévus par le modèle</span><strong>{fmt(calibration.observed.clean * 100)} % / {fmt(calibration.predicted.clean * 100)} %</strong></div>
+                <div className="stat-line"><span /><span>Échecs critiques : vus / prévus par le modèle</span><strong>{fmt(calibration.observed.failure * 100)} % / {fmt(calibration.predicted.failure * 100)} %</strong></div>
                 <div className="stat-line"><span /><span>Ajustement SC · EC</span><strong>×{fmt(calibration.cleanScale)} · ×{fmt(calibration.failureScale)}</strong></div>
               </div>
               <button className="button small ghost forge-calibration-reset" onClick={() => window.confirm("Oublier les runes observées ?") && setLog([])}>Réinitialiser</button>

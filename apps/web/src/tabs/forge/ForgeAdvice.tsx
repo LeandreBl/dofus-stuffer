@@ -1,7 +1,8 @@
 import { LoaderCircle, Sparkles } from "lucide-react";
 import { fmRuneWeight, type Catalog, type FmAdvice, type FmLine, type FmOdds, type FmPlanOption, type FmPolicy, type FmRune } from "@dofus/shared";
-import { StatIcon } from "../../components/StatIcon";
+import { GameImage } from "../../components/GameImage";
 import { fmt } from "../../lib/format";
+import { ForgeOverlay } from "./ForgeOverlay";
 
 export type ForgeOutcome = "clean" | "partial" | "failure";
 const pct = (value: number) => `${fmt(value * 100)} %`;
@@ -46,9 +47,15 @@ export function ForgeAdvice({ catalog, advice, options, running, locked, onOutco
       <div className="panel-head">
         <div><h2><Sparkles size={17} /> Prochaine rune</h2><p>Chaque rune possible est simulée jusqu’au bout de la session, avec les pertes et le puits.</p></div>
         {running && <LoaderCircle className="forge-spin" size={16} aria-label="Calcul en cours" />}
+        <ForgeOverlay>
+          <div className="forge-rune forge-overlay">
+            <GameImage className="forge-rune-icon" src={`/game/runes/${rune.id}.png`} />
+            <div><strong>Rune {rune.name}</strong><small>+{rune.points} {name(line)} · SC {pct(odds.clean)}</small></div>
+          </div>
+        </ForgeOverlay>
       </div>
       <div className="forge-rune">
-        <StatIcon stat={catalog.stats.find((entry) => entry.key === line.stat)} />
+        <GameImage className="forge-rune-icon" src={`/game/runes/${rune.id}.png`} />
         <div><strong>Rune {rune.name}</strong><small>+{rune.points} {name(line)} · poids {fmt(fmRuneWeight(rune))}</small></div>
       </div>
       {best && (
