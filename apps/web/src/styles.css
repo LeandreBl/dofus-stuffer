@@ -3260,3 +3260,54 @@ button.item-card-set:hover {
 .forge-calibration .stats-list { display: flex; flex-direction: column; gap: 10px; }
 .forge-calibration-reset { margin-top: 14px; }
 .stat-breakdown td input { width: 42px; padding: 3px 4px; border: 1px solid var(--line); border-radius: 5px; background: #0c100d; color: inherit; font: inherit; text-align: right; }
+
+/* Stuff comparison */
+.compare-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 18px; }
+.compare-toolbar label.button { cursor: pointer; }
+/* Breaks out of the centered workspace column to use 95 % of the viewport. */
+.compare-cards { display: flex; gap: 14px; overflow-x: auto; padding-bottom: 10px; align-items: stretch; width: 95vw; margin-left: calc(50% - 47.5vw); }
+.compare-card { flex: 0 0 300px; padding: 16px; }
+.compare-card-head { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.compare-card-head h3 { margin: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px; }
+.compare-card-head small { color: var(--muted); }
+.compare-items { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 12px; }
+.compare-items img { width: 30px; height: 30px; object-fit: contain; }
+.compare-filter-panel .stat-tile { min-width: 0; }
+.compare-filter-panel .stat-tile > span:not(.stat-icon) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.compare-filter-panel img.stat-icon { object-fit: contain; flex-shrink: 0; }
+.compare-hint { display: flex; align-items: center; gap: 10px; margin-bottom: 0; }
+.compare-fold { margin-bottom: 18px; }
+.compare-fold .panel-head { margin-bottom: 0; }
+.compare-fold .panel-head + * { margin-top: 16px; }
+.compare-card .stat-line { white-space: nowrap; }
+.compare-card .stat-line > span:nth-child(2) { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.compare-card .stat-line > :not(span:nth-child(2)) { flex-shrink: 0; }
+.compare-spell img { width: 20px; height: 20px; }
+.compare-spell strong span { display: inline-flex; align-items: center; gap: 3px; }
+/* The critical icon is a fixed-size sprite: scale it down instead of cropping it. */
+.compare-spell strong .stat-icon { transform: scale(.6); margin: -4px -4px -4px -2px; }
+.compare-spell strong .stat-icon img { width: 22px; height: 22px; }
+.compare-chance { color: var(--muted); }
+.compare-best { color: var(--accent); }
+.stat-line.compare-best strong { color: var(--accent); }
+.compare-add { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 10px; padding-top: 50px; min-height: 170px; text-align: center; border-style: dashed; color: var(--muted); cursor: pointer; }
+.compare-add:hover { color: var(--accent); border-color: #98b56b4d; }
+/* Centered while it fits; auto margins (unlike justify-content) keep the first card reachable once it scrolls. */
+.compare-cards > :first-child { margin-left: auto; }
+.compare-cards > :last-child { margin-right: auto; }
+.compare-filter-panel .category-tabs button { display: inline-flex; align-items: center; gap: 6px; }
+.compare-filter-panel .category-tabs .stat-icon { transform: scale(.75); margin: -3px; }
+/* Folded panels shrink to their title line. */
+.panel.folded { padding-top: 12px; padding-bottom: 12px; }
+.panel.folded .panel-head { margin-bottom: 0; }
+.panel.folded .panel-head p { display: none; }
+/* Damage preview card of the comparison */
+.damage-hover-heading > img { width: 44px; height: 44px; }
+.damage-hover-rows { display: grid; gap: 8px; }
+.damage-hover-row { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #ffffff0a; border-radius: 10px; background: #232b24; }
+.damage-hover-row.shown { border-color: #d1e97f36; background: #cfe6810b; }
+.damage-hover-row > span:not(.stat-icon) { flex: 1; color: #dbe3d5; display: flex; flex-direction: column; }
+.damage-hover-row > span small { color: var(--accent); font-size: 10px; }
+.damage-hover-row strong { display: flex; flex-direction: column; align-items: flex-end; font-size: 16px; color: #dbe5cb; font-variant-numeric: tabular-nums; }
+.damage-hover-row strong small { font-size: 10px; color: var(--muted); font-weight: 500; }
+.damage-hover-row strong.none { font-size: 12px; color: var(--muted); }

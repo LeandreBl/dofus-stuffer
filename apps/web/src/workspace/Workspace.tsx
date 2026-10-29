@@ -16,6 +16,7 @@ import { downloadJson, pickFile } from "../lib/files";
 import { stuffFilename } from "../lib/class-slug";
 import { urlParam } from "../lib/url";
 import { BuilderTab } from "../tabs/builder/BuilderTab";
+import { CompareTab, type ComparedStuff } from "../tabs/compare/CompareTab";
 import { EquipmentTab } from "../tabs/equipment/EquipmentTab";
 import { ForgeTab } from "../tabs/forge/ForgeTab";
 import { ItemsTab } from "../tabs/items/ItemsTab";
@@ -55,6 +56,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
   const [saved, setSaved] = useState(true);
   const [error, setError] = useState("");
   const [help, setHelp] = useState(false);
+  const [compared, setCompared] = useState<ComparedStuff[]>([]);
   const [browser, setBrowser] = useState<{ slot?: Slot } | null>(null);
   const [itemSlot, setItemSlot] = useState<Slot | undefined>();
   // Bumped key remounts the catalog on the requested set.
@@ -241,6 +243,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
           />
         )}
         {tab === "forge" && <ForgeTab catalog={catalog} notify={notify} />}
+        {tab === "compare" && <CompareTab catalog={catalog} request={request} stuffs={compared} onChange={setCompared} notify={notify} />}
         {tab === "market" && (
           <MarketTab
             catalog={catalog}
@@ -252,7 +255,7 @@ export function Workspace({ catalog }: { catalog: Catalog }) {
         )}
       </main>
       <AppFooter catalog={catalog} />
-      {tab !== "forge" && <LaunchButton
+      {tab !== "forge" && tab !== "compare" && <LaunchButton
         starting={optimization.starting}
         active={active}
         disabled={request.constraints.length === 0 || !characterAllocation.valid}
