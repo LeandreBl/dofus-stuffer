@@ -12,12 +12,12 @@ const c=JSON.parse(catalogueText), manifest=await read('data/source-manifest.jso
 assert.equal(c.version,'3.7.4.4');
 assert.equal(manifest.catalogSha256,createHash('sha256').update(catalogueText).digest('hex'));
 assert.equal(manifest.patch.applied,false);
-assert.equal(manifest.sourceFiles.length,11);
+assert.equal(manifest.sourceFiles.length,14);
 assert.equal(manifest.languageFiles.length,2);
 assert.equal(c.classes.length,19);
 assert.equal(c.items.length,3831);
-assert.equal(c.spells.length,849);
-assert.equal(c.spells.reduce((n,s)=>n+s.levels.length,0),1762);
+assert.equal(c.spells.length,861);
+assert.equal(c.spells.reduce((n,s)=>n+s.levels.length,0),1785);
 for(const key of ['items','spells','sets','classes']) {
   assert.equal(new Set(c[key].map(x=>x.id)).size,c[key].length,`${key}: unique ids`);
   assert.ok(c[key].every(x=>x.name?.trim()),`${key}: translated names`);

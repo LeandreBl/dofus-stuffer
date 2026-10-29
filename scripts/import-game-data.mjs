@@ -122,7 +122,10 @@ for (const variant of variants) if (breeds.some(b => b.id === variant.breedId)) 
 const commonTypes = await list('spell-types', {'id[$lte]': 30});
 const commonTypeIds = commonTypes.filter(t => /commun|spécial/i.test(t.longName?.fr ?? '')).map(t => t.id);
 const commonSpells = commonTypeIds.length ? await list('spells', {typeId: commonTypeIds}) : [];
-const requested = [...new Set([...classOf.keys(), ...commonSpells.map(s => s.id)])];
+// Common spells have variants too, listed under a pseudo-breed that is not a playable class.
+const commonIds = new Set(commonSpells.map(s => s.id));
+const commonVariantIds = variants.filter(v => !breeds.some(b => b.id === v.breedId) && v.spellIds.some(id => commonIds.has(id))).flatMap(v => v.spellIds);
+const requested = [...new Set([...classOf.keys(), ...commonSpells.map(s => s.id), ...commonVariantIds])];
 const chunks = (values, n=35) => Array.from({length: Math.ceil(values.length/n)}, (_, i) => values.slice(i*n, (i+1)*n));
 const spellsRaw = (await pooled(chunks(requested), ids => list('spells', {id: ids}), 3)).flat();
 const levelsRaw = (await pooled(chunks([...new Set(spellsRaw.flatMap(s => s.spellLevels))]), ids => list('spell-levels', {id: ids}), 3)).flat();

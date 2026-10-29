@@ -44,6 +44,10 @@
     "source": "https://api.dofusdb.fr/img/heads/SmallHead_20.png"
   },
   {
+    "file": "/game/classes/20.png",
+    "source": "https://api.dofusdb.fr/img/heads/SmallHead_3221.png"
+  },
+  {
     "file": "/game/classes/3.png",
     "source": "https://api.dofusdb.fr/img/heads/SmallHead_30.png"
   },
@@ -5118,10 +5122,6 @@
   {
     "file": "/game/items/151164.png",
     "source": "https://api.beta.dofusdb.fr/img/items/151164.png"
-  },
-  {
-    "file": "/game/items/151165.png",
-    "source": "https://api.beta.dofusdb.fr/img/items/151165.png"
   },
   {
     "file": "/game/items/151166.png",
@@ -14780,6 +14780,10 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11556.png"
   },
   {
+    "file": "/game/spells/11763.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11763.png"
+  },
+  {
     "file": "/game/spells/11764.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11764.png"
   },
@@ -14788,8 +14792,20 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11765.png"
   },
   {
+    "file": "/game/spells/11766.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11766.png"
+  },
+  {
     "file": "/game/spells/11767.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11767.png"
+  },
+  {
+    "file": "/game/spells/11768.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11768.png"
+  },
+  {
+    "file": "/game/spells/11769.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11769.png"
   },
   {
     "file": "/game/spells/11770.png",
@@ -14800,12 +14816,24 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11771.png"
   },
   {
+    "file": "/game/spells/11772.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11772.png"
+  },
+  {
     "file": "/game/spells/11773.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11773.png"
   },
   {
+    "file": "/game/spells/11774.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11774.png"
+  },
+  {
     "file": "/game/spells/11775.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_11775.png"
+  },
+  {
+    "file": "/game/spells/11776.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_11776.png"
   },
   {
     "file": "/game/spells/11781.png",
@@ -16392,6 +16420,10 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12446.png"
   },
   {
+    "file": "/game/spells/12447.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_12447.png"
+  },
+  {
     "file": "/game/spells/12448.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12448.png"
   },
@@ -16400,12 +16432,24 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12449.png"
   },
   {
+    "file": "/game/spells/12450.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_12450.png"
+  },
+  {
     "file": "/game/spells/12451.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12451.png"
   },
   {
     "file": "/game/spells/12452.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12452.png"
+  },
+  {
+    "file": "/game/spells/12453.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_12453.png"
+  },
+  {
+    "file": "/game/spells/12454.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_12454.png"
   },
   {
     "file": "/game/spells/12463.png",
@@ -17344,6 +17388,10 @@
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_12990.png"
   },
   {
+    "file": "/game/spells/12997.png",
+    "source": "https://api.beta.dofusdb.fr/img/spells/sort_12997.png"
+  },
+  {
     "file": "/game/spells/13023.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_13023.png"
   },
@@ -18166,5 +18214,37 @@
   {
     "file": "/game/spells/15431.png",
     "source": "https://api.beta.dofusdb.fr/img/spells/sort_15431.png"
+  },
+  {
+    "file": "/game/stats/erosion.png",
+    "source": "https://dofusdb.fr/icons/effects/erosion.png"
+  },
+  {
+    "file": "/game/stats/erosion.png",
+    "source": "https://dofusdb.fr/icons/effects/erosion.png"
+  },
+  {
+    "file": "/game/stats/tx_distanceDamage.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_distanceDamage.png"
+  },
+  {
+    "file": "/game/stats/tx_meleeDamage.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_meleeDamage.png"
+  },
+  {
+    "file": "/game/stats/tx_return.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_return.png"
+  },
+  {
+    "file": "/game/stats/tx_spellDamage.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_spellDamage.png"
+  },
+  {
+    "file": "/game/stats/tx_weaponDamage.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_weaponDamage.png"
+  },
+  {
+    "file": "/game/stats/tx_weaponDamage.png",
+    "source": "https://dofusdb.fr/icons/characteristics/tx_weaponDamage.png"
   }
 ]

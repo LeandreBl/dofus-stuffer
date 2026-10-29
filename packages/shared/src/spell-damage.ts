@@ -23,7 +23,7 @@ const resistanceEffects: Record<number,Element> = {215:'earth',216:'water',217:'
 // These actions have no outgoing HP damage. Visual script actions 3792/3793
 // reference animation usages (confirmed in the native SpellScriptData bundle).
 const utilityEffects = new Set([4,6,8,9,10,11,50,51,77,84,90,108,110,111,115,116,117,120,124,125,128,131,132,140,150,153,156,160,161,162,163,164,165,166,168,169,171,176,178,179,180,182,183,184,185,187,202,210,211,212,213,214,220,221,240,241,242,243,244,265,270,272,280,281,282,283,284,285,286,287,288,289,290,291,292,294,295,296,297,298,299,320,335,406,410,411,412,413,415,416,417,420,421,422,423,424,425,426,427,428,429,430,431,432,433,434,435,436,437,438,439,440,441,442,443,444,445,446,447,448,449,750,751,752,753,754,755,765,766,776,781,786,950,951,952,1009,1020,1031,1033,1036,1039,1041,1042,1045,1061,1075,1076,1078,1079,1080,1097,1099,1100,1101,1103,1104,1105,1106,1109,1144,1159,1181,1182,1183,1406,2018,2020,2023,2184,2802,2803,2805,2806,2844,2935,2971,2973,2998,2999,3000,3002,3792,3793]);
-for(const id of [666,141,2027,2905,2906,1060,1040,314,782,2807,798,2017,2972])utilityEffects.add(id);
+for(const id of [666,141,2027,2905,2906,1060,1040,314,782,2807,2809,798,2017,2972])utilityEffects.add(id);
 const finite = (value: number | undefined, fallback=0) => Number.isFinite(value) ? value! : fallback;
 const zero = (): DamageRange => ({min:0,average:0,max:0});
 const sum = (ranges: DamageRange[]): DamageRange => ranges.reduce((a,b)=>({min:a.min+b.min,average:a.average+b.average,max:a.max+b.max}),zero());

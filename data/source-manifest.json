@@ -2,7 +2,7 @@
   "source": "Ankama installed client static data",
   "version": "3.7.4.4",
   "sourceVersion": "3.7.4.4",
-  "fetchedAt": "2026-10-07T17:59:28.983Z",
+  "fetchedAt": "2026-10-29T22:55:25.450Z",
   "unityVersion": "6000.3.16f1",
   "sourceFiles": [
     {
@@ -105,19 +105,19 @@
     "reason": "Native client catalogue; no balance overlay.",
     "sourceVersion": "3.7.4.4"
   },
-  "catalogSha256": "1b4c465288a6c18bf89ae55c69f6469792461649cf8319b1e10cc90c0c625e81",
+  "catalogSha256": "541b8658aca9cb6e9bd235c5ce2236396a0763422d325823a65b60b265e982df",
   "counts": {
     "classes": 19,
     "characteristics": 120,
-    "spells": 849,
-    "spellLevels": 1762,
+    "spells": 861,
+    "spellLevels": 1785,
     "items": 3831,
     "sets": 521,
-    "combatSpells": 1892,
-    "combatStates": 992,
-    "summons": 103,
+    "combatSpells": 1907,
+    "combatStates": 993,
+    "summons": 104,
     "combatTargets": 103,
-    "assets": 4542
+    "assets": 4562
   },
   "endpointResources": [
     "version",
